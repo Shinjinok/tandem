@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<PropertyList include="uh1-base.xml">
+
+  <sim>
+
+    <description>Bell 412 "Griffin"</description>
+    <author>BARANGER Emmanuel (FMD/3D), StuartC (Twin version), Heiko Schulz (3D/FDM), Simon Lister (3D), Maik Justus (FDM, sound)</author>
+    <status>V0.5</status>
+
+    <flight-model>yasim</flight-model>
+    <aero>412-yasim</aero>
+    <variant-of>uh1</variant-of>
+    
+    <startup>
+      <splash-texture>Aircraft/UH1/Splash/412-splash.png</splash-texture>
+    </startup>
+
+    <rating>
+      <FDM type="int">     3 </FDM>
+      <systems type="int"> 2 </systems>
+      <cockpit type="int"> 2 </cockpit>
+      <model type="int">   4 </model>
+    </rating>
+
+    <model>
+      <path archive="y">Aircraft/UH1/Models/412-Griffin.xml</path>
+      <hide-guns type="bool">false</hide-guns>
+      <hide-sprayer type="bool">false</hide-sprayer>
+      <uh1>
+        <state type="int">0</state>
+        <engine type="float">0</engine>
+        <rotor-step-deg type="float">-1</rotor-step-deg>
+      </uh1>
+    </model>
+
+    <submodels>
+      <serviceable type="bool">true</serviceable>
+      <path>Aircraft/UH1/Models/Effects/guns/UH1submodels.xml</path>
+    </submodels>
+
+    <multiplay n="0">
+      <generic n="0">
+        <string n="1" type="string">412</string>
+      </generic>
+    </multiplay>
+
+  </sim>
+
+  <nasal>
+    <radar>
+      <path>Aircraft/UH1/Models/Interior/Panel/Instruments/RDR-160/RDR160.nas</path>
+    </radar>
+  </nasal>
+
+</PropertyList>

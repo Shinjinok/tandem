@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<PropertyList include="uh1-base.xml">
+
+  <sim>
+
+    <description>Bell UH 1 "Huey"</description>
+    <author>BARANGER Emmanuel (FMD/3D), StuartC (Twin version), Heiko Schulz (3D/FDM), Simon Lister (3D), Maik Justus (FDM, sound)</author>
+
+    <flight-model>yasim</flight-model>
+    <aero>uh1-yasim</aero>
+
+    <startup>
+      <splash-texture>Aircraft/UH1/Splash/uh1-splash.png</splash-texture>
+    </startup>
+
+    <rating>
+      <FDM type="int">     3 </FDM>
+      <systems type="int"> 2 </systems>
+      <cockpit type="int"> 2 </cockpit>
+      <model type="int">   4 </model>
+    </rating>
+
+    <model>
+      <path archive="y">Aircraft/UH1/Models/uh1.xml</path>
+      <hide-guns type="bool">false</hide-guns>
+      <hide-sprayer type="bool">false</hide-sprayer>
+      <uh1>
+        <state type="int">0</state>
+        <engine type="float">0</engine>
+        <rotor-step-deg type="float">-1</rotor-step-deg>
+      </uh1>
+    </model>
+
+    <submodels>
+      <serviceable type="bool">true</serviceable>
+      <path>Aircraft/UH1/Models/Effects/guns/UH1submodels.xml</path>
+    </submodels>
+
+    <multiplay n="0">
+      <generic n="0">
+        <string n="1" type="string">uh1</string>
+      </generic>
+    </multiplay>
+
+  </sim>
+
+</PropertyList>
+

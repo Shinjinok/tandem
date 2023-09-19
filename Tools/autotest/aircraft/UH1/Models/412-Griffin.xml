@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+
+<PropertyList>
+
+  <!-- Main fuselage -->
+  <model>
+    <path>Aircraft/UH1/Models/main.xml</path>
+  </model>
+
+  <!-- Engine -->
+  <model>
+    <path>Aircraft/UH1/Models/twinengines.xml</path>
+  </model>
+
+  <!-- Rotor principale -->
+  <model>
+    <path>Aircraft/UH1/Models/MainRotor/mainrotor4.xml</path>
+    <offsets>
+      <x-m> -4.367 </x-m>
+      <y-m>  0.000 </y-m>
+      <z-m>  1.000 </z-m>
+    </offsets>
+  </model>
+
+  <!-- Interieur -->
+  <model>
+    <name>Interieur</name>
+    <path>Aircraft/UH1/Models/Interior/212-412/interior412.xml</path>
+  </model>
+
+  <!-- For Rembrandt -->
+  <animation>
+    <type>noshadow</type>
+    <object-name>Interieur</object-name>
+  </animation>
+
+  <!-- Rotor de queue -->
+  <model>
+    <path>Aircraft/UH1/Models/TailRotor/tailrotor.xml</path>
+    <offsets>
+      <x-m> 4.271 </x-m>
+      <y-m> 0.473 </y-m>
+      <z-m> 1.555 </z-m>
+      <roll-deg>  -90 </roll-deg>
+    </offsets>
+  </model>
+
+  <!-- Une ombre pour OSG -->
+  <model>
+    <path>Aircraft/UH1/Models/shadow4.xml</path>
+    <offsets>
+      <x-m> -1.299 </x-m>
+      <y-m>  0.000 </y-m>
+      <z-m> -1.600 </z-m>
+    </offsets>
+  </model>
+
+  <model>
+    <name>fire</name>
+    <path>Aircraft/UH1/Models/Effects/Engine/Fire.xml</path>
+    <condition>
+      <equals>
+        <property>sim/crashed</property>
+        <value type="bool">true</value>
+      </equals>
+    </condition>
+    <offsets>
+      <x-m> 1.05 </x-m>
+      <y-m> 0.00 </y-m>
+      <z-m> 1.75 </z-m>
+    </offsets>
+  </model>
+  
+  <model>
+    <path>Aircraft/UH1/Models/lights/beacon.xml</path>
+    <offsets>
+      <x-m> -2.574 </x-m>
+      <y-m>  0.000 </y-m>
+      <z-m> -1.250 </z-m>
+    </offsets>
+  </model>
+
+  <model>
+    <path>Aircraft/UH1/Models/lights/RedLight.xml</path>
+    <offsets>
+      <x-m> -6.30 </x-m>
+      <y-m> -1.15 </y-m>
+      <z-m> -1.20 </z-m>
+    </offsets>
+  </model>
+
+  <model>
+    <path>Aircraft/UH1/Models/lights/RedLight.xml</path>
+    <offsets>
+      <x-m> -6.22 </x-m>
+      <y-m> -1.00 </y-m>
+      <z-m>  0.05 </z-m>
+    </offsets>
+  </model>
+
+  <model>
+    <path>Aircraft/UH1/Models/lights/GreenLight.xml</path>
+    <offsets>
+      <x-m> -6.30 </x-m>
+      <y-m>  1.15 </y-m>
+      <z-m> -1.20 </z-m>
+    </offsets>
+  </model>
+  
+  <model>
+    <path>Aircraft/UH1/Models/lights/GreenLight.xml</path>
+    <offsets>
+      <x-m> -6.22 </x-m>
+      <y-m>  1.00 </y-m>
+      <z-m>  0.05 </z-m>
+    </offsets>
+  </model>
+
+  </PropertyList>
+
