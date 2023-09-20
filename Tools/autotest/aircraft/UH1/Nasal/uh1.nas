@@ -370,8 +370,6 @@ dynamic_view.register(func {
 });
 
 
-
-
 # main() ============================================================
 var delta_time = props.globals.getNode("/sim/time/delta-realtime-sec", 1);
 var adf_rotation = props.globals.getNode("/instrumentation/adf/rotation-deg", 1);
@@ -387,6 +385,7 @@ var main_loop = func {
 	update_slide();
 	update_engine();
 	update_rotor_cone_angle();
+
 	settimer(main_loop, 0);
 }
 

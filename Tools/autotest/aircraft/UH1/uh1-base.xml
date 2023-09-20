@@ -201,11 +201,11 @@
          setlistener("/sim/signals/fdm-initialized", func {
              var left  = screen.display.new(20, 10);
              left.add("/controls/engines/engine[0]/throttle");
+             left.add("/controls/engines/engine[1]/throttle");
+             left.add("/controls/flight/aileron");
+             left.add("/controls/flight/elevator");
+             left.add("/controls/flight/rudder");
              
-             left.add("/apm/motor_right");
-             left.add("/apm/motor_left");
-             left.add("/apm/motor_front");
-             left.add("/apm/motor_back");
 
               var right = screen.display.new(-250, 20);
              right.add("/position/altitude-agl-ft");

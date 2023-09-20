@@ -13,7 +13,6 @@ nice fgfs \
     --disable-hud-3d \
     --disable-horizon-effect \
     --timeofday=noon \
-    --disable-sound \
     --disable-fullscreen \
     --disable-random-objects \
     --disable-ai-models \
