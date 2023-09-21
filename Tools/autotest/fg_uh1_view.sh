@@ -1,10 +1,11 @@
 #!/bin/sh
+#https://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
 
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --native-fdm=socket,in,10,,5503,udp \
-    --fdm=external \
+    --native=socket,in,10,,5503,udp \
+    --native=socket,out,10,,5502,udp \
     --aircraft=UH1 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
     --airport=PHNL \
