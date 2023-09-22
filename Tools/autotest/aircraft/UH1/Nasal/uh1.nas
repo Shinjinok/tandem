@@ -407,6 +407,7 @@ var update_quad = func( ) {
     setprop("/apm/motor_left",   round10(getprop("/engines/engine[1]/rpm")/10.0));
     setprop("/apm/motor_front",  round10(getprop("/engines/engine[2]/rpm")/10.0));
     setprop("/apm/motor_back",   round10(getprop("/engines/engine[3]/rpm")/10.0));
+
 }
 
 var crashed = 0;

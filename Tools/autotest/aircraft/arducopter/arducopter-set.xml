@@ -99,7 +99,7 @@ Arducotper UAV Model
              right.add("/apm/roll");
              right.add("/apm/pitch");
              right.add("/apm/heading");
-             right.add("/apm/airspeed");
+             right.add("/airspeed");
          });
         </script>
     </arducopter>
