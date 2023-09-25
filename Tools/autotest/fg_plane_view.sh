@@ -4,11 +4,10 @@ AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
     --native-fdm=socket,in,10,,5503,udp \
-    --native-fdm=socket,out,10,,5502,udp \
     --fdm=external \
     --aircraft=Rascal110-JSBSim \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
-    --airport=YKRY \
+    --airport=PHNL \
     --geometry=650x550 \
     --bpp=32 \
     --disable-hud-3d \

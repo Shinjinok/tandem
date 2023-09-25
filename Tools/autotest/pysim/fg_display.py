@@ -59,8 +59,8 @@ def kt2mps(x):
 def mps2kt(x):
     return x / 0.514444444
 
-udp = udp_socket("127.0.0.1:5123")
-fgout = udp_socket("127.0.0.1:5124", is_input=False)
+udp = udp_socket("127.0.0.1:5000")
+#fgout = udp_socket("127.0.0.1:5001", is_input=True)
 
 tlast = time.time()
 count = 0
@@ -70,7 +70,7 @@ fg = fgFDM.fgFDM()
 while True:
     udp_buffer = udp.recv(1000)
     fg.parse(udp_buffer)
-    fgout.write(fg.pack())
+    #fgout.write(fg.pack())
     count += 1
     if time.time() - tlast > 1.0:
         print("%u FPS len=%u" % (count, len(udp_buffer)))

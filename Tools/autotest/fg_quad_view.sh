@@ -3,7 +3,7 @@
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --native-fdm=socket,in,10,,5503,udp \
+    --native-fdm=socket,in,10,,5501,udp \
     --fdm=external \
     --aircraft=arducopter \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \

@@ -1,12 +1,12 @@
 #!/bin/sh
 #https://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
+#./sim_vehicle.py -v ArduCopter -f heli --model flightaxis:127.0.0.1
 
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --native-ctrls=socket,in,10,127.0.0.1,5600,udp \
-    --native-ctrls=socket,out,10,127.0.0.1,5700,udp \
-    --native-fdm=socket,out,10,127.0.0.1,5500,udp \
+    --native-fdm=socket,in,1,,5001,udp \
+    --native-fdm=socket,out,1,,5000,udp \
     --aircraft=UH1 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
     --airport=PHNL \
