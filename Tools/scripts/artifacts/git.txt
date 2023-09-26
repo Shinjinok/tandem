@@ -1,0 +1,10 @@
+commit 79b3b3e8cdcf73134b8729670afcecfaab2211e8
+Author: Ryan Friedman <ryanfriedman5410+github@gmail.com>
+Date:   Mon Mar 13 10:02:57 2023 -0600
+
+    gitmodules: Bump up benchmark to v1.7.1 release
+    
+    * https://github.com/google/benchmark/releases/tag/v1.7.1
+    * Solves #23193
+    
+    Signed-off-by: Ryan Friedman <ryanfriedman5410+github@gmail.com>
