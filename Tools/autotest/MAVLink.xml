@@ -41,44 +41,31 @@
 
     <output>
       <binary_mode>true</binary_mode>
-      <binary_footer>magic,0x4c56414d</binary_footer>
 
-      <!-- ##### GPS ##### -->
-      <chunk>
-	<name>latitude</name>
+      <!-- ##### time : 1 doubles ##### -->
+	  <chunk>
+	<name>timestamp</name>
 	<type>double</type>
-	<node>/position/latitude-deg</node>
+	<node>/sim/time/steady-clock-sec</node>
+      </chunk> 
+	 <!-- ##### imu_angular_velocity_rpy : 3 doubles ##### -->
+	  <chunk>
+	<name>roll-rate</name>
+	<type>double</type>
+	<node>/orientation/roll-rate-degps</node>
       </chunk> 
       <chunk>
-	<name>longitude</name>
+	<name>pitch-rate</name>
 	<type>double</type>
-	<node>/position/longitude-deg</node>
+	<node>/orientation/pitch-rate-degps</node>
       </chunk> 
       <chunk>
-	<name>altitude</name>
+	<name>yaw-rate</name>
 	<type>double</type>
-	<node>/position/altitude-ft</node>
+	<node>/orientation/yaw-rate-degps</node>
       </chunk> 
-      <chunk>
-	<name>heading</name>
-	<type>double</type>
-	<node>/orientation/heading-deg</node>
-      </chunk>
 
-      <!-- ground course = atan(ve/vn), speed = sqrt((ve*ve) + (vn*vn)) -->
-      <chunk>
-	<name>speed - north</name>
-	<type>double</type>
-	<node>/velocities/speed-north-fps</node>
-      </chunk> 
-      <chunk>
-	<name>speed - east</name>
-	<type>double</type>
-	<node>/velocities/speed-east-fps</node>
-      </chunk> 
-      
-
-      <!-- ##### IMU ##### -->
+	<!-- ##### imu_linear_acceleration_xyz 3doubles ##### -->
       <chunk>
 	<name>x-accel</name>
 	<type>double</type>
@@ -94,22 +81,60 @@
 	<type>double</type>
 	<node>/accelerations/pilot/z-accel-fps_sec</node>
       </chunk>
+	<!-- ##### imu_orientation 3 doubles ##### -->
+     <chunk>
+	<name>roll</name>
+	<type>double</type>
+	<node>/orientation/roll-deg</node>
+      </chunk>
+	  <chunk>
+	<name>pitch</name>
+	<type>double</type>
+	<node>/orientation/pitch-deg</node>
+      </chunk>
+      <chunk>
+	<name>heading</name>
+	<type>double</type>
+	<node>/orientation/heading-deg</node>
+      </chunk>
 
+      <!-- ground course = atan(ve/vn), speed = sqrt((ve*ve) + (vn*vn)) -->
+	  <!-- ##### velocity_xyz 3doubles ##### -->
       <chunk>
-	<name>roll-rate</name>
+	<name>speed - north</name>
 	<type>double</type>
-	<node>/orientation/roll-rate-degps</node>
+	<node>/velocities/speed-north-fps</node>
       </chunk> 
       <chunk>
-	<name>pitch-rate</name>
+	<name>speed - east</name>
 	<type>double</type>
-	<node>/orientation/pitch-rate-degps</node>
+	<node>/velocities/speed-east-fps</node>
+      </chunk> 
+	  <chunk>
+	<name>speed - down</name>
+	<type>double</type>
+	<node>/velocities/speed-down-fps</node>
+      </chunk> 
+      <!-- ##### position_xyz 3doubles ##### -->
+	   <chunk>
+	<name>latitude</name>
+	<type>double</type>
+	<node>/position/latitude-deg</node>
       </chunk> 
       <chunk>
-	<name>yaw-rate</name>
+	<name>longitude</name>
 	<type>double</type>
-	<node>/orientation/yaw-rate-degps</node>
+	<node>/position/longitude-deg</node>
       </chunk> 
+      <chunk>
+	<name>altitude</name>
+	<type>double</type>
+	<node>/position/altitude-ft</node>
+      </chunk> 
+
+      
+
+      
 
       
     </output>
