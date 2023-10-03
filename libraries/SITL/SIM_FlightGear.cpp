@@ -41,17 +41,17 @@ void FlightGear::set_interface_ports(const char* address, const int port_in, con
     // try to bind to a specific port so that if we restart ArduPilot
     // FlightGear keeps sending us packets. Not strictly necessary but
     // useful for debugging
-    if (!socket_sitl.bind(_flightgear_address, _flightgear_port)) {
+    if (!socket_sitl.bind("0.0.0.0", port_in)) {
         fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
         fprintf(stderr, "Aborting launch...\n");
         exit(1);
     }
-    printf("Bind %s:%d for SITL in\n", "127.0.0.1", _flightgear_port);
+    printf("Bind %s:%d for SITL in\n", "127.0.0.1", port_in);
     socket_sitl.reuseaddress();
     socket_sitl.set_blocking(false);
 
-    //_flightgear_address = address;
-    //_flightgear_port = port_out;
+    _flightgear_address = address;
+    _flightgear_port = port_out;
     printf("Setting FlightGear interface to %s:%d \n", _flightgear_address, _flightgear_port);
 }
 
@@ -60,14 +60,29 @@ void FlightGear::set_interface_ports(const char* address, const int port_in, con
 */
 void FlightGear::send_servos(const struct sitl_input &input)
 {
-    servo_packet pkt;
+   udp_in_packet pkt;
+
     // should rename servo_command
     // 16 because struct sitl_input.servos is 16 large in SIM_Aircraft.h
-    for (unsigned i = 0; i < 4; ++i)
-    {
-      pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
-    }
-    socket_sitl.sendto(&pkt, sizeof(pkt), _flightgear_address, 5003);
+ //   for (unsigned i = 0; i < 4; ++i)
+   // {
+      //double temp = (input.servos[i]-1000) / 1000.0f;
+  //    double temp = ((double) i + 1.0)/10/0;
+  //    pkt.data[i] = be64toh(temp);
+  //  }
+    pkt.serveo[0] = (input.servos[0]-1000) / 1000.0f;
+    pkt.serveo[1] = (input.servos[1]-1000) / 1000.0f;
+    pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
+    pkt.serveo[3] = (input.servos[3]-1000) / 1000.0f;
+    pkt.serveo[4] = (input.servos[5]-1000) / 1000.0f;
+    
+    uint32_t data[5];
+    data[0] = __bswap_32(pkt.data[0]);
+    data[1] = __bswap_32(pkt.data[1]);
+    data[2] = __bswap_32(pkt.data[2]);
+    data[3] = __bswap_32(pkt.data[3]);
+    data[4] = __bswap_32(pkt.data[4]);
+    socket_sitl.sendto(&data, sizeof(data), _flightgear_address, _flightgear_port);
 }
 
 /*
@@ -76,13 +91,13 @@ void FlightGear::send_servos(const struct sitl_input &input)
  */
 void FlightGear::recv_fdm(const struct sitl_input &input)
 {
-    generic_packet pkt;
-    
+    U_packet pkt;
+    uint64_t fdm_data[16];
     /*
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
+    while (socket_sitl.recv(&fdm_data[0], sizeof(fdm_data), 100) != sizeof(fdm_data)) {
         
         send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
@@ -91,37 +106,71 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         }
     }
 
-    printf("altitude %ld \n",  be64toh(pkt.position_xyz[2]));
-    const double deltat = pkt.timestamp - last_timestamp;  // in seconds
+    for (long unsigned int i=0; i < sizeof(fdm_data)/8; i++){
+        pkt.data[i] = be64toh(fdm_data[i]);
+    }
+    //printf("time stamp %f \n",  pkt.g_packet.timestamp);
+    const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }
-    // get imu stuff
-    accel_body = Vector3f(static_cast<float>(pkt.imu_linear_acceleration_xyz[0]),
-                          static_cast<float>(pkt.imu_linear_acceleration_xyz[1]),
-                          static_cast<float>(pkt.imu_linear_acceleration_xyz[2]));
 
-    gyro = Vector3f(static_cast<float>(pkt.imu_angular_velocity_rpy[0]),
-                    static_cast<float>(pkt.imu_angular_velocity_rpy[1]),
-                    static_cast<float>(pkt.imu_angular_velocity_rpy[2]));
+    accel_body = Vector3f(static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[0]), 
+                            static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[1]), 
+                            static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[2])) * FEET_TO_METERS;
 
+    double p, q, r;
+    SIM::convert_body_frame(pkt.g_packet.imu_orientation_rpy[0], pkt.g_packet.imu_orientation_rpy[1],
+                             pkt.g_packet.imu_angular_velocity_rpy[0], pkt.g_packet.imu_angular_velocity_rpy[1],
+                             pkt.g_packet.imu_angular_velocity_rpy[2],
+                             &p, &q, &r);
+    gyro = Vector3f(p, q, r);
+
+    velocity_ef = Vector3f(pkt.g_packet.velocity_xyz[0], pkt.g_packet.velocity_xyz[1],
+                pkt.g_packet.velocity_xyz[2]) * FEET_TO_METERS;
+
+    //location.lat = RAD_TO_DEG_DOUBLE * pkt.g_packet.position_xyz[0] * 1.0e7;
+    //location.lng = RAD_TO_DEG_DOUBLE * pkt.g_packet.position_xyz[1] * 1.0e7;
+    //location.alt = pkt.g_packet.position_xyz[0]*30.48 + home.alt;
+
+    dcm.from_euler(pkt.g_packet.imu_orientation_rpy[0]*DEG_TO_RAD_DOUBLE,
+                pkt.g_packet.imu_orientation_rpy[1]*DEG_TO_RAD_DOUBLE,
+                pkt.g_packet.imu_orientation_rpy[2]*DEG_TO_RAD_DOUBLE);
+        // get imu stuff
+    /*accel_body = Vector3f(static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[0]*0.03107),
+                          static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[1]*0.03107),
+                          static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[2]*0.03107));
+
+    gyro = Vector3f(static_cast<float>(pkt.g_packet.imu_angular_velocity_rpy[0]*0.0175),
+                    static_cast<float>(pkt.g_packet.imu_angular_velocity_rpy[1]*0.0175),
+                    static_cast<float>(pkt.g_packet.imu_angular_velocity_rpy[2]*0.0175));
+*/
     // compute dcm from imu orientation
-    Vector3f rpy = Vector3f(static_cast<float>(pkt.imu_orientation_rpy[0]),
-                    static_cast<float>(pkt.imu_orientation_rpy[1]),
-                    static_cast<float>(pkt.imu_orientation_rpy[2]));
+    
+/*
     Quaternion quat;
-    quat.from_euler(rpy);
+    quat.from_euler(static_cast<float>(pkt.g_packet.imu_orientation_rpy[0]*0.0175),
+                    static_cast<float>(pkt.g_packet.imu_orientation_rpy[1]*0.0175),
+                    static_cast<float>(pkt.g_packet.imu_orientation_rpy[2]*0.0175));
+
     quat.rotation_matrix(dcm);
 
-    velocity_ef = Vector3f(static_cast<float>(pkt.velocity_xyz[0]),
-                           static_cast<float>(pkt.velocity_xyz[1]),
-                           static_cast<float>(pkt.velocity_xyz[2]));
+    velocity_ef = Vector3f(static_cast<float>(pkt.g_packet.velocity_xyz[0]*0.3048),
+                           static_cast<float>(pkt.g_packet.velocity_xyz[1]*0.3048),
+                           static_cast<float>(pkt.g_packet.velocity_xyz[2]*0.3048));*/
 
-    position = Vector3d(pkt.position_xyz[0],
-                        pkt.position_xyz[1],
-                        pkt.position_xyz[2]);
-    position.xy() += origin.get_distance_NE_double(home);
+  /*printf("a:%f %f %f g:%f %f %f v:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
+                                                gyro.x,gyro.y,gyro.z,
+                                                velocity_ef.x,velocity_ef.y,velocity_ef.z);*/
+
+    Location loc_current = Location(static_cast<int32_t>(pkt.g_packet.position_xyz[0]*1.0e7),
+                            static_cast<int32_t>(pkt.g_packet.position_xyz[1]*1.0e7),
+                            static_cast<int32_t>(pkt.g_packet.position_xyz[2]*30.48), Location::AltFrame::ABOVE_HOME);
+
+    position = origin.get_distance_NED_double(loc_current);
+
+    //printf("%f %f %f\n",position.x,position.y,position.z);
 
     // auto-adjust to simulation frame rate
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
@@ -129,7 +178,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
-    last_timestamp = pkt.timestamp;
+    last_timestamp = pkt.g_packet.timestamp;
 
 }
 

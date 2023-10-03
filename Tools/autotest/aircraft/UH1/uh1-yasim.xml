@@ -90,7 +90,7 @@
          <control-input axis="/controls/flight/aileron" control="CYCLICAIL" src0="-1.0" src1="1.0" dst0="-0.35" dst1="0.35"/>
          <control-input axis="/controls/flight/elevator-trim" control="CYCLICELE" split="true"/>
          <control-input axis="/controls/flight/elevator" control="CYCLICELE" src0="-1.0" src1="1.0" dst0="-0.35" dst1="0.35"/>
-         <control-input axis="/controls/engines/engine[0]/throttle" control="COLLECTIVE" src0="0.0" src1="1.0" dst0="1.0" dst1="-1.0"/>
+         <control-input axis="/controls/engines/engine[0]/propeller-pitch" control="COLLECTIVE" src0="-1.0" src1="1.0" dst0="-1.0" dst1="1.0"/>
          <control-input axis="/rotors/bar/roll-deg" control="CYCLICAIL" src0="-20" src1="20" dst0=".16" dst1="-.16"/>
          <control-input axis="/rotors/bar/yaw-deg" control="CYCLICELE" src0="-24" src1="24" dst0="-.16" dst1=".16"/>
   </rotor>

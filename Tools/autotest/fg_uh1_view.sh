@@ -1,12 +1,13 @@
 #!/bin/sh
 #https://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
-#./sim_vehicle.py -v ArduCopter -f heli --model flightaxis:127.0.0.1
-
+#./sim_vehicle.py -v ArduCopter -f heli -L PHNL --model flightgear:127.0.0.1 --map --console
+#    --generic=socket,in,10,,5003,udp,MAVLink \
+#    --generic=socket,out,10,,5001,udp,MAVLink \
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --generic=socket,in,1,,5003,udp,MAVLink \
-    --generic=socket,out,1,,5001,udp,MAVLink \
+    --generic=socket,in,10,,9002,dup,MAVLink \
+    --generic=socket,out,10,,9003,udp,MAVLink \
     --aircraft=UH1 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
     --airport=PHNL \

@@ -471,7 +471,7 @@ class VehicleInfo(object):
         if opts.model is not None:
             ret["model"] = opts.model
 
-        if (ret["model"].find("xplane") != -1 or ret["model"].find("flightaxis") != -1):
+        if (ret["model"].find("xplane") != -1 or ret["model"].find("flightaxis") != -1 or ret["model"].find("flightgear") != -1):
             ret["sitl-port"] = False
 
 

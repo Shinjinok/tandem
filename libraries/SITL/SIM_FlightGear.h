@@ -29,6 +29,7 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+
 namespace SITL {
 
 /*
@@ -58,7 +59,7 @@ private:
       float motor_speed[16];
     };
 
-    /*
+      /*
       reply packet sent from FlightGear to ArduPilot
      */
     struct fdm_packet {
@@ -70,15 +71,26 @@ private:
       double position_xyz[3];
     };
 
-    struct generic_packet {
+    typedef struct generic_packet {
       double timestamp;  // in seconds
       double imu_angular_velocity_rpy[3];
       double imu_linear_acceleration_xyz[3];
       double imu_orientation_rpy[3];
       double velocity_xyz[3];
       double position_xyz[3];
-    };
+    }Generic_packet;
 
+    
+
+    typedef union u_packet{
+      Generic_packet g_packet;
+      uint64_t data[16];
+    }U_packet;
+
+    typedef union udp_in_packet{
+      float serveo[8];
+      uint32_t data[8];
+    }Udp_in_packet;
 
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
