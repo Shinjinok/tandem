@@ -97,7 +97,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&fdm_data[0], sizeof(fdm_data), 100) != sizeof(fdm_data)) {
+    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 100) != sizeof(fdm_data)) {
         
         send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
@@ -116,19 +116,18 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[0]), 
-                            static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[1]), 
-                            static_cast<float>(pkt.g_packet.imu_linear_acceleration_xyz[2])) * FEET_TO_METERS;
+    accel_body = Vector3f(pkt.g_packet.imu_linear_acceleration_xyz[0]* FEET_TO_METERS/GRAVITY_MSS,
+                            pkt.g_packet.imu_linear_acceleration_xyz[1]* FEET_TO_METERS/GRAVITY_MSS,
+                            pkt.g_packet.imu_linear_acceleration_xyz[2]* FEET_TO_METERS/GRAVITY_MSS);
 
-    double p, q, r;
-    SIM::convert_body_frame(pkt.g_packet.imu_orientation_rpy[0], pkt.g_packet.imu_orientation_rpy[1],
-                             pkt.g_packet.imu_angular_velocity_rpy[0], pkt.g_packet.imu_angular_velocity_rpy[1],
-                             pkt.g_packet.imu_angular_velocity_rpy[2],
-                             &p, &q, &r);
-    gyro = Vector3f(p, q, r);
 
-    velocity_ef = Vector3f(pkt.g_packet.velocity_xyz[0], pkt.g_packet.velocity_xyz[1],
-                pkt.g_packet.velocity_xyz[2]) * FEET_TO_METERS;
+     gyro = Vector3f(pkt.g_packet.imu_angular_velocity_rpy[0]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.imu_angular_velocity_rpy[1]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.imu_angular_velocity_rpy[2]*DEG_TO_RAD_DOUBLE );
+
+    velocity_ef = Vector3f(pkt.g_packet.velocity_xyz[0] * FEET_TO_METERS, 
+                            pkt.g_packet.velocity_xyz[1] * FEET_TO_METERS,
+                            pkt.g_packet.velocity_xyz[2]  * FEET_TO_METERS);
 
     //location.lat = RAD_TO_DEG_DOUBLE * pkt.g_packet.position_xyz[0] * 1.0e7;
     //location.lng = RAD_TO_DEG_DOUBLE * pkt.g_packet.position_xyz[1] * 1.0e7;
@@ -170,7 +169,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
 
     position = origin.get_distance_NED_double(loc_current);
 
-    //printf("%f %f %f\n",position.x,position.y,position.z);
+    printf("%f %f %f\n",position.x,position.y,position.z);
 
     // auto-adjust to simulation frame rate
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
