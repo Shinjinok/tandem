@@ -72,19 +72,23 @@ private:
     };
 
     typedef struct generic_packet {
-      double timestamp;  // in seconds
-      double imu_angular_velocity_rpy[3];
-      double imu_linear_acceleration_xyz[3];
-      double imu_orientation_rpy[3];
-      double velocity_xyz[3];
+      
+      float imu_angular_velocity_rpy[3];
+      float imu_linear_acceleration_xyz[3];
+      float imu_orientation_rpy[3];
+      float velocity_xyz[3];
       double position_xyz[3];
+      double timestamp;  // in seconds
     }Generic_packet;
 
-    
+    typedef struct generic_uint_packdt{
+      uint32_t data32[12];
+      uint64_t data64[4];
+    }Generic_uint_packet;
 
     typedef union u_packet{
       Generic_packet g_packet;
-      uint64_t data[16];
+      Generic_uint_packet uint_data;
     }U_packet;
 
     typedef union udp_in_packet{
