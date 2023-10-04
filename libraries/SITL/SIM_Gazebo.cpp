@@ -110,10 +110,18 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
                     static_cast<float>(pkt.imu_orientation_quat[2]),
                     static_cast<float>(pkt.imu_orientation_quat[3]));
     quat.rotation_matrix(dcm);
+   
+    float roll = quat.get_euler_roll();
+    float pitch = quat.get_euler_pitch();
+    float yaw = quat.get_euler_yaw();
 
     velocity_ef = Vector3f(static_cast<float>(pkt.velocity_xyz[0]),
                            static_cast<float>(pkt.velocity_xyz[1]),
                            static_cast<float>(pkt.velocity_xyz[2]));
+
+                           printf("a:%f %f %f g:%f %f %f v:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
+                                                gyro.x,gyro.y,gyro.z,
+                                                roll,pitch,yaw);
 
     position = Vector3d(pkt.position_xyz[0],
                         pkt.position_xyz[1],

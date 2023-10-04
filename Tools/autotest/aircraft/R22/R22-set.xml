@@ -337,6 +337,25 @@ Syd Adams
         <R22>
             <file>Aircraft/R22/Nasal/Electrical.nas</file>
             <file>Aircraft/R22/Nasal/R22.nas</file>
+            <script>
+         setlistener("/sim/signals/fdm-initialized", func {
+             var left  = screen.display.new(20, 10);
+             left.add("/controls/engines/engine[0]/throttle");
+             left.add("/controls/engines/engine[0]/propeller-pitch");
+             left.add("/controls/flight/aileron");
+             left.add("/controls/flight/elevator");
+             left.add("/controls/flight/rudder");
+             
+
+              var right = screen.display.new(-250, 20);
+             right.add("/position/altitude-agl-ft");
+             right.add("rotors/main/rpm");
+             right.add("/orientation/roll-deg");
+             right.add("/orientation/pitch-deg");
+             right.add("/orientation/heading-deg");
+             right.add("/instrumentation/gps/indicated-ground-speed-kt");
+         });
+        </script>
         </R22>
         <dialogs>
             <file>Aircraft/R22/Nasal/dialogs.nas</file>
