@@ -6,8 +6,8 @@
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --generic=socket,in,5,,9999,dup,MAVLink \
-    --generic=socket,out,5,,9003,udp,MAVLink \
+    --generic=socket,in,10,,9999,udp,MAVLink \
+    --generic=socket,out,10,,9003,udp,MAVLink \
     --aircraft=UH1 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
     --airport=PHNL \

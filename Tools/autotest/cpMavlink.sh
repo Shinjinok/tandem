@@ -1,0 +1,1 @@
+sudo cp ~/tandem/Tools/autotest/MAVLink.xml /usr/share/games/flightgear/Protocol/.
