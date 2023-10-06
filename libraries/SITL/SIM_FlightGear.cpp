@@ -70,10 +70,10 @@ void FlightGear::send_servos(const struct sitl_input &input)
   //    double temp = ((double) i + 1.0)/10/0;
   //    pkt.data[i] = be64toh(temp);
   //  }
-    pkt.serveo[0] = (input.servos[0]-1500) / 500.0f * 2.0;
-    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f * 2.0;
+    pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
+    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f *2.0;
     pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
-    pkt.serveo[3] = (input.servos[3]-1500) / 500.0f * 2.0;
+    pkt.serveo[3] = (input.servos[3]-1500) / 500.0f *2.0;
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
     
     uint32_t data[5];
@@ -112,35 +112,35 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     for (long unsigned int i=0; i < sizeof(fdm_data.data64)/8; i++){
         pkt.uint_data.data64[i] = be64toh(fdm_data.data64[i]);
     }
-    printf("time stamp %f \n",  pkt.g_packet.timestamp);
+ //   printf("time stamp %f \n",  pkt.g_packet.timestamp);
     const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }
 
-    accel_body = Vector3f(-pkt.g_packet.imu_linear_acceleration_xyz[0]* FEET_TO_METERS,
+    accel_body = Vector3f(pkt.g_packet.imu_linear_acceleration_xyz[0]* FEET_TO_METERS,
                           pkt.g_packet.imu_linear_acceleration_xyz[1]* FEET_TO_METERS,
-                         -pkt.g_packet.imu_linear_acceleration_xyz[2]* FEET_TO_METERS);
+                          pkt.g_packet.imu_linear_acceleration_xyz[2]* FEET_TO_METERS);
 
 
-     gyro = Vector3f(-pkt.g_packet.imu_angular_velocity_rpy[0]*DEG_TO_RAD_DOUBLE,
+    gyro = Vector3f(pkt.g_packet.imu_angular_velocity_rpy[0]*DEG_TO_RAD_DOUBLE,
                      pkt.g_packet.imu_angular_velocity_rpy[1]*DEG_TO_RAD_DOUBLE,
-                     pkt.g_packet.imu_angular_velocity_rpy[2]*DEG_TO_RAD_DOUBLE );
+                      pkt.g_packet.imu_angular_velocity_rpy[2]*DEG_TO_RAD_DOUBLE );
 
     velocity_ef = Vector3f(pkt.g_packet.velocity_xyz[0] * FEET_TO_METERS, 
-                            pkt.g_packet.velocity_xyz[1] * FEET_TO_METERS,
-                            pkt.g_packet.velocity_xyz[2]  * FEET_TO_METERS);
+                           -pkt.g_packet.velocity_xyz[1] * FEET_TO_METERS,
+                           -pkt.g_packet.velocity_xyz[2]  * FEET_TO_METERS);
 
     // compute dcm from imu orientation
   
     dcm.from_euler(pkt.g_packet.imu_orientation_rpy[0]*DEG_TO_RAD_DOUBLE,
-                    pkt.g_packet.imu_orientation_rpy[1]*DEG_TO_RAD_DOUBLE,
+                   pkt.g_packet.imu_orientation_rpy[1]*DEG_TO_RAD_DOUBLE,
                     pkt.g_packet.imu_orientation_rpy[2]*DEG_TO_RAD_DOUBLE);
 
-  printf("A:%.2f %.2f %f G:%.2f %.2f %.2f V:%.2f %.2f %.2f\n",accel_body.x,accel_body.y,accel_body.z,
-                                                gyro.x,gyro.y,gyro.z,
-                                                velocity_ef.x,velocity_ef.y,velocity_ef.z);
+  //printf("A:%.2f %.2f %f G:%.2f %.2f %.2f V:%.2f %.2f %.2f\n",accel_body.x,accel_body.y,accel_body.z,
+    //                                            gyro.x,gyro.y,gyro.z,
+      //                                          pkt.g_packet.imu_orientation_rpy[0],pkt.g_packet.imu_orientation_rpy[1],pkt.g_packet.imu_orientation_rpy[2]);
 
    
     location.lat = pkt.g_packet.position_xyz[0] * 1.0e7;
@@ -150,8 +150,9 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
 
     position = origin.get_distance_NED_double(location);
 
-    printf("%f %f %f\n",position.x,position.y,position.z);
-
+ //   printf("%f %f %f\n",position.x,position.y,position.z);
+ //    printf("%d %d %d\n",location.lat,location.lng,location.alt);
+ //    printf("%d %d %d\n",origin.lat,origin.lng,origin.alt);
     // auto-adjust to simulation frame rate
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 

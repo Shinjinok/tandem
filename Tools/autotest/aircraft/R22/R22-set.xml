@@ -353,7 +353,15 @@ Syd Adams
              right.add("/orientation/roll-deg");
              right.add("/orientation/pitch-deg");
              right.add("/orientation/heading-deg");
-             right.add("/instrumentation/gps/indicated-ground-speed-kt");
+             right.add("/orientation/roll-rate-degps");
+             right.add("/orientation/pitch-rate-degps");
+             right.add("/orientation/yaw-rate-degps");
+             right.add("/accelerations/pilot/x-accel-fps_sec");
+             right.add("/accelerations/pilot/y-accel-fps_sec");
+             right.add("/accelerations/pilot/z-accel-fps_sec");
+             right.add("/velocities/speed-north-fps");
+             right.add("/velocities/speed-east-fps");
+             right.add("/velocities/speed-down-fps");
          });
         </script>
         </R22>
