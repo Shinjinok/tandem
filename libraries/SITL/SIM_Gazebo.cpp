@@ -119,9 +119,16 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
                            static_cast<float>(pkt.velocity_xyz[1]),
                            static_cast<float>(pkt.velocity_xyz[2]));
 
-                           printf("a:%f %f %f g:%f %f %f v:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
-                                                gyro.x,gyro.y,gyro.z,
-                                                roll,pitch,yaw);
+    if(count++ >99){
+    printf("a:%f %f %f g:%f %f %f v:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
+                        gyro.x,gyro.y,gyro.z,
+                        roll,pitch,yaw);
+    printf("v_ef %f %f %f\n",velocity_ef.x,velocity_ef.y,velocity_ef.z);
+    printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
+    printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
+    printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
+    count =0;
+    }
 
     position = Vector3d(pkt.position_xyz[0],
                         pkt.position_xyz[1],

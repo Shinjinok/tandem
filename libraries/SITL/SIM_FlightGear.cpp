@@ -70,12 +70,19 @@ void FlightGear::send_servos(const struct sitl_input &input)
   //    double temp = ((double) i + 1.0)/10/0;
   //    pkt.data[i] = be64toh(temp);
   //  }
-    pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
+ /*   pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
     pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f *2.0;
     pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
     pkt.serveo[3] = (input.servos[3]-1500) / 500.0f *2.0;
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
-    
+    */
+
+   pkt.serveo[0] = (ch[0] -0.5)*2.0;
+   pkt.serveo[1] = (-ch[1] +0.5)*2.0;
+   pkt.serveo[2] = ch[2];
+   pkt.serveo[3] = (ch[3]-0.5)*2.0;
+   pkt.serveo[4] = ch[2];
+
     uint32_t data[5];
     data[0] = __bswap_32(pkt.data[0]);
     data[1] = __bswap_32(pkt.data[1]);
@@ -92,12 +99,12 @@ void FlightGear::send_servos(const struct sitl_input &input)
 void FlightGear::recv_fdm(const struct sitl_input &input)
 {
     U_packet pkt;
-    Generic_uint_packet fdm_data;
+    uint64_t fdm_data[NUM_ARRAY_DATA];
     /*
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&fdm_data.data32, sizeof(Generic_uint_packet), 100) != sizeof(Generic_uint_packet)) {
+    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 100) != sizeof(fdm_data)) {
         
         send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
@@ -106,11 +113,8 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         }
     }
 
-    for (long unsigned int i=0; i < sizeof(fdm_data.data32)/4; i++){
-        pkt.uint_data.data32[i] = be32toh(fdm_data.data32[i]);
-    }
-    for (long unsigned int i=0; i < sizeof(fdm_data.data64)/8; i++){
-        pkt.uint_data.data64[i] = be64toh(fdm_data.data64[i]);
+    for (long unsigned int i=0; i < NUM_ARRAY_DATA; i++){
+        pkt.data64[i] = __bswap_64(fdm_data[i]);
     }
  //   printf("time stamp %f \n",  pkt.g_packet.timestamp);
     const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
@@ -119,41 +123,56 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(pkt.g_packet.imu_linear_acceleration_xyz[0]* FEET_TO_METERS,
-                          pkt.g_packet.imu_linear_acceleration_xyz[1]* FEET_TO_METERS,
-                          pkt.g_packet.imu_linear_acceleration_xyz[2]* FEET_TO_METERS);
+    accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_nwu_xyz[1]* FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_nwu_xyz[2]* FEET_TO_METERS);
 
 
-    gyro = Vector3f(pkt.g_packet.imu_angular_velocity_rpy[0]*DEG_TO_RAD_DOUBLE,
-                     pkt.g_packet.imu_angular_velocity_rpy[1]*DEG_TO_RAD_DOUBLE,
-                      pkt.g_packet.imu_angular_velocity_rpy[2]*DEG_TO_RAD_DOUBLE );
+    gyro = Vector3f(pkt.g_packet.body_pqr_rad[0],
+                     pkt.g_packet.body_pqr_rad[1],
+                      pkt.g_packet.body_pqr_rad[2] );
+    /*double p, q, r;
+    SIM::convert_body_frame(pkt.g_packet.orientation_rpy_deg[0], pkt.g_packet.orientation_rpy_deg[1],
+                             pkt.g_packet.rotation_rate_rpy_degps[0], pkt.g_packet.rotation_rate_rpy_degps[1], pkt.g_packet.rotation_rate_rpy_degps[2],
+                             &p, &q, &r);
+    gyro = Vector3f(p, q, r);*/
 
-    velocity_ef = Vector3f(pkt.g_packet.velocity_xyz[0] * FEET_TO_METERS, 
-                           -pkt.g_packet.velocity_xyz[1] * FEET_TO_METERS,
-                           -pkt.g_packet.velocity_xyz[2]  * FEET_TO_METERS);
+    velocity_ef = Vector3f(pkt.g_packet.velocity_ned_fps[0] * FEET_TO_METERS, 
+                           pkt.g_packet.velocity_ned_fps[1] * FEET_TO_METERS,
+                           pkt.g_packet.velocity_ned_fps[2]  * FEET_TO_METERS);
 
     // compute dcm from imu orientation
   
-    dcm.from_euler(pkt.g_packet.imu_orientation_rpy[0]*DEG_TO_RAD_DOUBLE,
-                   pkt.g_packet.imu_orientation_rpy[1]*DEG_TO_RAD_DOUBLE,
-                    pkt.g_packet.imu_orientation_rpy[2]*DEG_TO_RAD_DOUBLE);
+    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
+                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
 
   //printf("A:%.2f %.2f %f G:%.2f %.2f %.2f V:%.2f %.2f %.2f\n",accel_body.x,accel_body.y,accel_body.z,
     //                                            gyro.x,gyro.y,gyro.z,
       //                                          pkt.g_packet.imu_orientation_rpy[0],pkt.g_packet.imu_orientation_rpy[1],pkt.g_packet.imu_orientation_rpy[2]);
 
-   
-    location.lat = pkt.g_packet.position_xyz[0] * 1.0e7;
-    location.lng = pkt.g_packet.position_xyz[1] * 1.0e7;
-    location.alt = pkt.g_packet.position_xyz[2]* FEET_TO_METERS * 100.0f;
+   //printf(" g1:%f %f %f\n g2:%f %f %f \n",  gyro.x,gyro.y,gyro.z,p,q,r);
+    location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
+    location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
+    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
 
 
     position = origin.get_distance_NED_double(location);
 
- //   printf("%f %f %f\n",position.x,position.y,position.z);
+    position.xy() = origin.get_distance_NE_double(home);
+
+    printf("vz:%f alt:%f\n",velocity_ef.z, pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS);
+    printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
+    printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
+    printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
+
  //    printf("%d %d %d\n",location.lat,location.lng,location.alt);
  //    printf("%d %d %d\n",origin.lat,origin.lng,origin.alt);
     // auto-adjust to simulation frame rate
+    ch[0] = pkt.g_packet.ch[0];
+    ch[1] = pkt.g_packet.ch[1];
+    ch[2] = pkt.g_packet.ch[2];
+    ch[3] = pkt.g_packet.ch[3];
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {

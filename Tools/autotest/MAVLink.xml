@@ -51,54 +51,105 @@
     <output>
       <binary_mode>true</binary_mode>
 
-
+      <!-- ##### time : 1 doubles ##### -->
+	  <chunk>
+	<name>timestamp</name>
+	<type>double</type>
+	<node>/sim/time/steady-clock-sec</node>
+      </chunk> 
 	 <!-- ##### imu_angular_velocity_rpy : 3 doubles ##### -->
+ 	
+
+ 	<chunk>
+		<name>ch1</name>
+		<type>double</type>
+		<node>/controls/flight/flaps</node>
+     </chunk> 
+
+	 <chunk>
+		<name>ch2</name>
+		<type>double</type>
+		<node>/controls/gear/brake-right</node>
+     </chunk> 
+
+	<chunk>
+		<name>ch3</name>
+		<type>double</type>
+		<node>/controls/flight/wings</node>
+     </chunk> 
+
+    <chunk>
+		<name>ch4</name>
+		<type>double</type>
+		<node>/controls/gear/brake-left</node>
+    </chunk> 
+
+
+
+
+
 	  <chunk>
 	<name>roll-rate</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/roll-rate-degps</node>
       </chunk> 
       <chunk>
 	<name>pitch-rate</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/pitch-rate-degps</node>
       </chunk> 
       <chunk>
 	<name>yaw-rate</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/yaw-rate-degps</node>
       </chunk> 
+
+	  	  <chunk>
+	<name>body-roll-rate</name>
+	<type>double</type>
+	<node>/orientation/p-body</node>
+      </chunk> 
+      <chunk>
+	<name>body-pitch-rate</name>
+	<type>double</type>
+	<node>/orientation/q-body</node>
+      </chunk> 
+      <chunk>
+	<name>body-yaw-rate</name>
+	<type>double</type>
+	<node>/orientation/r-body</node>
+      </chunk>
 
 	<!-- ##### imu_linear_acceleration_xyz 3doubles ##### -->
       <chunk>
 	<name>x-accel</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/accelerations/pilot/x-accel-fps_sec</node>
       </chunk>
       <chunk>
 	<name>y-accel</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/accelerations/pilot/y-accel-fps_sec</node>
       </chunk>
       <chunk>
 	<name>z-accel</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/accelerations/pilot/z-accel-fps_sec</node>
       </chunk>
 	<!-- ##### imu_orientation 3 doubles ##### -->
      <chunk>
 	<name>roll</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/roll-deg</node>
       </chunk>
 	  <chunk>
 	<name>pitch</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/pitch-deg</node>
       </chunk>
       <chunk>
 	<name>heading</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/orientation/heading-deg</node>
       </chunk>
 
@@ -106,17 +157,17 @@
 	  <!-- ##### velocity_xyz 3doubles ##### -->
       <chunk>
 	<name>speed - north</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/velocities/speed-north-fps</node>
       </chunk> 
       <chunk>
 	<name>speed - east</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/velocities/speed-east-fps</node>
       </chunk> 
 	  <chunk>
 	<name>speed - down</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/velocities/speed-down-fps</node>
       </chunk> 
       <!-- ##### position_xyz 3doubles ##### -->
@@ -137,12 +188,7 @@
 	<type>double</type>
 	<node>/position/altitude-ft</node>
       </chunk>   
-      <!-- ##### time : 1 doubles ##### -->
-	  <chunk>
-	<name>timestamp</name>
-	<type>double</type>
-	<node>/sim/time/steady-clock-sec</node>
-      </chunk> 
+
 
       
 

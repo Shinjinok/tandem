@@ -29,6 +29,7 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
+#define NUM_ARRAY_DATA 23
 
 namespace SITL {
 
@@ -72,23 +73,20 @@ private:
     };
 
     typedef struct generic_packet {
-      
-      float imu_angular_velocity_rpy[3];
-      float imu_linear_acceleration_xyz[3];
-      float imu_orientation_rpy[3];
-      float velocity_xyz[3];
-      double position_xyz[3];
       double timestamp;  // in seconds
+      double ch[4];
+      double rotation_rate_rpy_degps[3];
+      double body_pqr_rad[3];
+      double pilot_accel_nwu_xyz[3];
+      double orientation_rpy_deg[3];
+      double velocity_ned_fps[3];
+      double position_la_lon_alt[3];
+      
     }Generic_packet;
-
-    typedef struct generic_uint_packdt{
-      uint32_t data32[12];
-      uint64_t data64[4];
-    }Generic_uint_packet;
 
     typedef union u_packet{
       Generic_packet g_packet;
-      Generic_uint_packet uint_data;
+      uint64_t data64[NUM_ARRAY_DATA];
     }U_packet;
 
     typedef union udp_in_packet{
@@ -106,6 +104,8 @@ private:
     const char *_flightgear_address = "127.0.0.1";
     int _flightgear_port = 5001;
     static const uint64_t FLIGHTGEAR_TIMEOUT_US = 5000000;
+
+    float ch[4]={0.0,0.0,0.0,0.0};
 };
 
 }  // namespace SITL
