@@ -70,18 +70,18 @@ void FlightGear::send_servos(const struct sitl_input &input)
   //    double temp = ((double) i + 1.0)/10/0;
   //    pkt.data[i] = be64toh(temp);
   //  }
- /*   pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
+     pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
     pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f *2.0;
-    pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
+    pkt.serveo[2] = (2000- input.servos[2]) / 1000.0f;
     pkt.serveo[3] = (input.servos[3]-1500) / 500.0f *2.0;
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
-    */
+    
 
-   pkt.serveo[0] = (ch[0] -0.5)*2.0;
-   pkt.serveo[1] = (-ch[1] +0.5)*2.0;
-   pkt.serveo[2] = ch[2];
-   pkt.serveo[3] = (ch[3]-0.5)*2.0;
-   pkt.serveo[4] = ch[2];
+ //  pkt.serveo[0] = (ch[0] -0.5)*2.0;
+ //  pkt.serveo[1] = (-ch[1] +0.5)*2.0;
+  // pkt.serveo[2] = 0.5;
+ //  pkt.serveo[3] = (ch[3]-0.5)*2.0;
+ //  pkt.serveo[4] = 0.5;//1.0 - ch[2];
 
     uint32_t data[5];
     data[0] = __bswap_32(pkt.data[0]);
@@ -118,24 +118,30 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     }
  //   printf("time stamp %f \n",  pkt.g_packet.timestamp);
     const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
+      //  printf("deltat %f\n",deltat);
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }
 
     accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
-                          pkt.g_packet.pilot_accel_nwu_xyz[1]* FEET_TO_METERS,
-                          pkt.g_packet.pilot_accel_nwu_xyz[2]* FEET_TO_METERS);
+                          pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
 
+    //float p = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE / delta_time;
+    //float q = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE / delta_time;
+    //float r = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE / delta_time;
+    //gyro = Vector3f(-pkt.g_packet.body_pqr_rad[0], pkt.g_packet.body_pqr_rad[1], pkt.g_packet.body_pqr_rad[2]);
 
-    gyro = Vector3f(pkt.g_packet.body_pqr_rad[0],
-                     pkt.g_packet.body_pqr_rad[1],
-                      pkt.g_packet.body_pqr_rad[2] );
-    /*double p, q, r;
+    //   gyro = Vector3f(0,0,0);                         
+   /* double p, q, r;
     SIM::convert_body_frame(pkt.g_packet.orientation_rpy_deg[0], pkt.g_packet.orientation_rpy_deg[1],
                              pkt.g_packet.rotation_rate_rpy_degps[0], pkt.g_packet.rotation_rate_rpy_degps[1], pkt.g_packet.rotation_rate_rpy_degps[2],
-                             &p, &q, &r);
-    gyro = Vector3f(p, q, r);*/
+                             &p, &q, &r);*/
+                             
+    gyro = Vector3f(pkt.g_packet.body_pqr_rad[0], 
+                    pkt.g_packet.body_pqr_rad[1],
+                    pkt.g_packet.body_pqr_rad[2]);
 
     velocity_ef = Vector3f(pkt.g_packet.velocity_ned_fps[0] * FEET_TO_METERS, 
                            pkt.g_packet.velocity_ned_fps[1] * FEET_TO_METERS,
@@ -147,24 +153,25 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
                    pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
                     pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
 
-  //printf("A:%.2f %.2f %f G:%.2f %.2f %.2f V:%.2f %.2f %.2f\n",accel_body.x,accel_body.y,accel_body.z,
-    //                                            gyro.x,gyro.y,gyro.z,
-      //                                          pkt.g_packet.imu_orientation_rpy[0],pkt.g_packet.imu_orientation_rpy[1],pkt.g_packet.imu_orientation_rpy[2]);
+  printf("A:%.3f %.3f %.3f G:%.3f %.3f %.3f D:%.3f %.3f %.3f\n",accel_body.x,accel_body.y,accel_body.z,
+                                                gyro.x,gyro.y,gyro.z,
+                                                pkt.g_packet.orientation_rpy_deg[0],pkt.g_packet.orientation_rpy_deg[1],pkt.g_packet.orientation_rpy_deg[2]);
 
    //printf(" g1:%f %f %f\n g2:%f %f %f \n",  gyro.x,gyro.y,gyro.z,p,q,r);
     location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
     location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
     location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
 
+   // printf("alt %d\n",location.alt);
 
     position = origin.get_distance_NED_double(location);
 
     position.xy() = origin.get_distance_NE_double(home);
 
     printf("vz:%f alt:%f\n",velocity_ef.z, pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS);
-    printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
-    printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
-    printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
+   // printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
+   // printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
+  //  printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
 
  //    printf("%d %d %d\n",location.lat,location.lng,location.alt);
  //    printf("%d %d %d\n",origin.lat,origin.lng,origin.alt);
@@ -212,6 +219,8 @@ void FlightGear::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
+    //extrapolate_sensors(delta_time);
+    
     update_position();
 
     time_advance();

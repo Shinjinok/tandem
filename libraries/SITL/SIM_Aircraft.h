@@ -218,8 +218,8 @@ protected:
 
     uint64_t time_now_us;
 
-    const float gyro_noise = radians(0.1f);
-    const float accel_noise = 0.3f;
+    const float gyro_noise = radians(0.0f);
+    const float accel_noise = 0.0f;
     float rate_hz = 1200.0f;
     float target_speedup;
     uint64_t frame_time_us;

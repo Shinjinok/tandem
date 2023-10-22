@@ -90,6 +90,10 @@ void Aircraft::set_start_location(const Location &start_loc, const float start_y
              home.lng*1e-7,
              home.alt*0.01,
              home_yaw);
+    ::printf("Position: %f %f %f\n",
+             position.x,
+             position.y,
+             position.z);
 
     location = home;
     ground_level = home.alt * 0.01f;
@@ -243,6 +247,8 @@ void Aircraft::time_advance()
     if (use_time_sync) {
         sync_frame_time();
     }
+
+    //printf("time_advance %ld\n",last_time_us);
 }
 
 /* setup the frame step time */
@@ -253,6 +259,7 @@ void Aircraft::setup_frame_time(float new_rate, float new_speedup)
     frame_time_us = uint64_t(1.0e6f/rate_hz);
 
     last_wall_time_us = get_wall_time_us();
+    
 }
 
 /* adjust frame_time calculation */
@@ -403,6 +410,9 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
     fdm.scanner.points = scanner.points;
     fdm.scanner.ranges = scanner.ranges;
 
+  //  printf("fmd.rollRate: %f fdm.pitchRate %f fdm.yawRate %f\n",
+    //fdm.rollRate, fdm.pitchRate,fdm.yawRate);
+
     // copy rangefinder
     memcpy(fdm.rangefinder_m, rangefinder_m, sizeof(fdm.rangefinder_m));
 
@@ -424,6 +434,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
         fdm.latitude  = smoothing.location.lat * 1.0e-7;
         fdm.longitude = smoothing.location.lng * 1.0e-7;
         fdm.altitude  = smoothing.location.alt * 1.0e-2;
+        printf("use smoothed");
     }
 
 
@@ -479,6 +490,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
                                     pos.x, pos.y, pos.z,
                                     vel.x, vel.y, vel.z,
                                     airspeed_pitot);
+
     }
 }
 
@@ -934,7 +946,7 @@ void Aircraft::extrapolate_sensors(float delta_time)
 
     dcm.rotate(gyro * delta_time);
     dcm.normalize();
-
+//printf("dt: %f\n",delta_time);
     // work out acceleration as seen by the accelerometers. It sees the kinematic
     // acceleration (ie. real movement), plus gravity
     accel_body = dcm.transposed() * (accel_earth + Vector3f(0,0,-GRAVITY_MSS));

@@ -319,7 +319,7 @@ void Helicopter::update(const struct sitl_input &input)
     }
     }
 
-
+    printf("rot accel.x %f y %f z %f\n",rot_accel.x,rot_accel.y,rot_accel.z);
     update_dynamics(rot_accel);
     update_external_payload(input);
 

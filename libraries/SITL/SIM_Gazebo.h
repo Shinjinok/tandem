@@ -13,7 +13,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connection for ardupilot version of Gazebo
+  simulator connection for ardupilot version of gazebo
 */
 
 #pragma once
@@ -28,6 +28,8 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
+
+#define NUM_ARRAY_DATA 23
 
 namespace SITL {
 
@@ -58,7 +60,7 @@ private:
       float motor_speed[16];
     };
 
-    /*
+      /*
       reply packet sent from Gazebo to ArduPilot
      */
     struct fdm_packet {
@@ -70,6 +72,28 @@ private:
       double position_xyz[3];
     };
 
+    typedef struct generic_packet {
+      double timestamp;  // in seconds
+      double ch[4];
+      double rotation_rate_rpy_degps[3];
+      double body_pqr_rad[3];
+      double pilot_accel_nwu_xyz[3];
+      double orientation_rpy_deg[3];
+      double velocity_ned_fps[3];
+      double position_la_lon_alt[3];
+      
+    }Generic_packet;
+
+    typedef union u_packet{
+      Generic_packet g_packet;
+      uint64_t data64[NUM_ARRAY_DATA];
+    }U_packet;
+
+    typedef union udp_in_packet{
+      float serveo[8];
+      uint32_t data[8];
+    }Udp_in_packet;
+
     void recv_fdm(const struct sitl_input &input);
     void send_servos(const struct sitl_input &input);
     void drain_sockets();
@@ -78,10 +102,11 @@ private:
 
     SocketAPM socket_sitl;
     const char *_gazebo_address = "127.0.0.1";
-    int _gazebo_port = 9002;
+    int _gazebo_port = 5001;
     static const uint64_t GAZEBO_TIMEOUT_US = 5000000;
-    int count = 0;
-    
+
+    float ch[4]={0.0,0.0,0.0,0.0};
+    double delta_time=0;
 };
 
 }  // namespace SITL

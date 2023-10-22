@@ -60,14 +60,38 @@ void Gazebo::set_interface_ports(const char* address, const int port_in, const i
 */
 void Gazebo::send_servos(const struct sitl_input &input)
 {
-    servo_packet pkt;
+   udp_in_packet pkt;
+
     // should rename servo_command
     // 16 because struct sitl_input.servos is 16 large in SIM_Aircraft.h
-    for (unsigned i = 0; i < 16; ++i)
-    {
-      pkt.motor_speed[i] = (input.servos[i]-1000) / 1000.0f;
-    }
-    socket_sitl.sendto(&pkt, sizeof(pkt), _gazebo_address, _gazebo_port);
+ //   for (unsigned i = 0; i < 4; ++i)
+   // {
+      //double temp = (input.servos[i]-1000) / 1000.0f;
+  //    double temp = ((double) i + 1.0)/10/0;
+  //    pkt.data[i] = be64toh(temp);
+  //  }
+     pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
+    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f *2.0;
+    pkt.serveo[2] = (2000- input.servos[2]) / 1000.0f;
+    pkt.serveo[3] = (input.servos[3]-1500) / 500.0f *2.0;
+    pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
+    
+
+ //  pkt.serveo[0] = (ch[0] -0.5)*2.0;
+ //  pkt.serveo[1] = (0.5 -ch[1] )*2.0;4P4
+   pkt.serveo[2] = ch[2];
+ //  pkt.serveo[3] = (ch[3]-0.5)*2.0;
+   pkt.serveo[4] = 1-ch[2];
+
+   //printf("ch0 %f ch1 %f ch2 %f ch3 %f\n", ch[0],ch[1],ch[2],ch[3]);
+
+    uint32_t data[5];
+    data[0] = __bswap_32(pkt.data[0]);
+    data[1] = __bswap_32(pkt.data[1]);
+    data[2] = __bswap_32(pkt.data[2]);
+    data[3] = __bswap_32(pkt.data[3]);
+    data[4] = __bswap_32(pkt.data[4]);
+    socket_sitl.sendto(&data, sizeof(data), _gazebo_address, 9999);
 }
 
 /*
@@ -76,72 +100,95 @@ void Gazebo::send_servos(const struct sitl_input &input)
  */
 void Gazebo::recv_fdm(const struct sitl_input &input)
 {
-    fdm_packet pkt;
-
+    U_packet pkt;
+    uint64_t fdm_data[NUM_ARRAY_DATA];
     /*
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&pkt, sizeof(pkt), 100) != sizeof(pkt)) {
+    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 100) != sizeof(fdm_data)) {
+        
         send_servos(input);
-        // Reset the timestamp after a long disconnection, also catch gazebo reset
+        // Reset the timestamp after a long disconnection, also catch Gazebo reset
         if (get_wall_time_us() > last_wall_time_us + GAZEBO_TIMEOUT_US) {
             last_timestamp = 0;
         }
     }
 
-    const double deltat = pkt.timestamp - last_timestamp;  // in seconds
+    for (long unsigned int i=0; i < NUM_ARRAY_DATA; i++){
+        pkt.data64[i] = __bswap_64(fdm_data[i]);
+    }
+ //   printf("time stamp %f \n",  pkt.g_packet.timestamp);
+    const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
+      //  printf("deltat %f\n",deltat);
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
     }
-    // get imu stuff
-    accel_body = Vector3f(static_cast<float>(pkt.imu_linear_acceleration_xyz[0]),
-                          static_cast<float>(pkt.imu_linear_acceleration_xyz[1]),
-                          static_cast<float>(pkt.imu_linear_acceleration_xyz[2]));
 
-    gyro = Vector3f(static_cast<float>(pkt.imu_angular_velocity_rpy[0]),
-                    static_cast<float>(pkt.imu_angular_velocity_rpy[1]),
-                    static_cast<float>(pkt.imu_angular_velocity_rpy[2]));
+    accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
+
+    //float p = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE / delta_time;
+    //float q = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE / delta_time;
+    //float r = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE / delta_time;
+    //gyro = Vector3f(-pkt.g_packet.body_pqr_rad[0], pkt.g_packet.body_pqr_rad[1], pkt.g_packet.body_pqr_rad[2]);
+
+                          
+  double p, q, r;
+    SIM::convert_body_frame(pkt.g_packet.orientation_rpy_deg[0], pkt.g_packet.orientation_rpy_deg[1],
+                             pkt.g_packet.rotation_rate_rpy_degps[0], pkt.g_packet.rotation_rate_rpy_degps[1], pkt.g_packet.rotation_rate_rpy_degps[2],
+                             &p, &q, &r);
+                             
+    //gyro = Vector3f(pkt.g_packet.body_pqr_rad[0], 
+      //              pkt.g_packet.body_pqr_rad[1],
+        //            pkt.g_packet.body_pqr_rad[2]);
+
+    velocity_ef = Vector3f(pkt.g_packet.velocity_ned_fps[0] * FEET_TO_METERS, 
+                           pkt.g_packet.velocity_ned_fps[1] * FEET_TO_METERS,
+                           pkt.g_packet.velocity_ned_fps[2]  * FEET_TO_METERS);
 
     // compute dcm from imu orientation
-    Quaternion quat(static_cast<float>(pkt.imu_orientation_quat[0]),
-                    static_cast<float>(pkt.imu_orientation_quat[1]),
-                    static_cast<float>(pkt.imu_orientation_quat[2]),
-                    static_cast<float>(pkt.imu_orientation_quat[3]));
-    quat.rotation_matrix(dcm);
-   
-    float roll = quat.get_euler_roll();
-    float pitch = quat.get_euler_pitch();
-    float yaw = quat.get_euler_yaw();
+  
+    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
+                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
 
-    velocity_ef = Vector3f(static_cast<float>(pkt.velocity_xyz[0]),
-                           static_cast<float>(pkt.velocity_xyz[1]),
-                           static_cast<float>(pkt.velocity_xyz[2]));
+  //printf("A:%.3f %.3f %.3f G:%.3f %.3f %.3f D:%.3f %.3f %.3f\n",accel_body.x,accel_body.y,accel_body.z,
+                                     //           gyro.x,gyro.y,gyro.z,
+                                      //          pkt.g_packet.orientation_rpy_deg[0],pkt.g_packet.orientation_rpy_deg[1],pkt.g_packet.orientation_rpy_deg[2]);
 
-    if(count++ >99){
-    printf("a:%f %f %f g:%f %f %f v:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
-                        gyro.x,gyro.y,gyro.z,
-                        roll,pitch,yaw);
-    printf("v_ef %f %f %f\n",velocity_ef.x,velocity_ef.y,velocity_ef.z);
-    printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
-    printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
-    printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
-    count =0;
-    }
+   //printf(" g1:%f %f %f\n g2:%f %f %f \n",  gyro.x,gyro.y,gyro.z,p,q,r);
+    location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
+    location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
+    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
 
-    position = Vector3d(pkt.position_xyz[0],
-                        pkt.position_xyz[1],
-                        pkt.position_xyz[2]);
-    position.xy() += origin.get_distance_NE_double(home);
+   // printf("alt %d\n",location.alt);
 
+    position = origin.get_distance_NED_double(location);
+    //position = home.get_distance_NED_double(location);
+
+    //position.xy() = origin.get_distance_NE_double(home);
+    printf("pos x: %f y:%f z: %f\n", position.x,position.y,position.z);
+    //printf("vz:%f alt:%f\n",velocity_ef.z, pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS);
+   // printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
+   // printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
+  //  printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
+
+ //    printf("%d %d %d\n",location.lat,location.lng,location.alt);
+ //    printf("%d %d %d\n",origin.lat,origin.lng,origin.alt);
     // auto-adjust to simulation frame rate
+    ch[0] = pkt.g_packet.ch[0];
+    ch[1] = pkt.g_packet.ch[1];
+    ch[2] = pkt.g_packet.ch[2];
+    ch[3] = pkt.g_packet.ch[3];
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
-    last_timestamp = pkt.timestamp;
+    last_timestamp = pkt.g_packet.timestamp;
 
 }
 
@@ -175,6 +222,8 @@ void Gazebo::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
+    //extrapolate_sensors(delta_time);
+    
     update_position();
 
     time_advance();
