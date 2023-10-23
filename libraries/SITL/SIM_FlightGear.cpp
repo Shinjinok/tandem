@@ -128,54 +128,42 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
                           pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
                           pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
 
-    //float p = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE / delta_time;
-    //float q = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE / delta_time;
-    //float r = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE / delta_time;
-    //gyro = Vector3f(-pkt.g_packet.body_pqr_rad[0], pkt.g_packet.body_pqr_rad[1], pkt.g_packet.body_pqr_rad[2]);
-
-    //   gyro = Vector3f(0,0,0);                         
-   /* double p, q, r;
-    SIM::convert_body_frame(pkt.g_packet.orientation_rpy_deg[0], pkt.g_packet.orientation_rpy_deg[1],
-                             pkt.g_packet.rotation_rate_rpy_degps[0], pkt.g_packet.rotation_rate_rpy_degps[1], pkt.g_packet.rotation_rate_rpy_degps[2],
-                             &p, &q, &r);*/
-                             
-    gyro = Vector3f(pkt.g_packet.body_pqr_rad[0], 
-                    pkt.g_packet.body_pqr_rad[1],
-                    pkt.g_packet.body_pqr_rad[2]);
-
-    velocity_ef = Vector3f(pkt.g_packet.velocity_ned_fps[0] * FEET_TO_METERS, 
-                           pkt.g_packet.velocity_ned_fps[1] * FEET_TO_METERS,
-                           pkt.g_packet.velocity_ned_fps[2]  * FEET_TO_METERS);
-
+    
+    Fdm_data new_data;                         
+    new_data.pai = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE;
+    new_data.theta = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE;
+    new_data.phi = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE;
     // compute dcm from imu orientation
-  
-    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
-                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
-                    pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
+    dcm.from_euler(new_data.pai,new_data.theta,new_data.phi);
 
-  printf("A:%.3f %.3f %.3f G:%.3f %.3f %.3f D:%.3f %.3f %.3f\n",accel_body.x,accel_body.y,accel_body.z,
-                                                gyro.x,gyro.y,gyro.z,
-                                                pkt.g_packet.orientation_rpy_deg[0],pkt.g_packet.orientation_rpy_deg[1],pkt.g_packet.orientation_rpy_deg[2]);
-
-   //printf(" g1:%f %f %f\n g2:%f %f %f \n",  gyro.x,gyro.y,gyro.z,p,q,r);
     location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
     location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
     location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
 
-   // printf("alt %d\n",location.alt);
-
     position = origin.get_distance_NED_double(location);
 
-    position.xy() = origin.get_distance_NE_double(home);
+    new_data.x = position.x;
+    new_data.y = position.y;
+    new_data.z = position.z;
 
-    printf("vz:%f alt:%f\n",velocity_ef.z, pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS);
-   // printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
-   // printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
-  //  printf("locat  %d %d %d\n",location.lat,location.lng,location.alt);
 
- //    printf("%d %d %d\n",location.lat,location.lng,location.alt);
- //    printf("%d %d %d\n",origin.lat,origin.lng,origin.alt);
-    // auto-adjust to simulation frame rate
+    new_data.p = (new_data.pai - old_data.pai) / dt;
+    new_data.q = (new_data.theta - old_data.theta) / dt;
+    new_data.r = (new_data.phi - old_data.phi) / dt;
+    gyro = Vector3f(new_data.p, new_data.q, new_data.r);
+
+    new_data.vx = (new_data.x - old_data.x) /dt;
+    new_data.vx = (new_data.x - old_data.x) /dt;
+    new_data.vx = (new_data.x - old_data.x) /dt;
+    velocity_ef = Vector3f(new_data.vx, new_data.vy, new_data.vz);
+
+
+    old_data = new_data;
+
+    printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:% 3.3f %3.3f %3.3f\n",
+    accel_body.x,accel_body.y,accel_body.z,
+    gyro.x,gyro.y,gyro.z, new_data.vx, new_data.vy,new_data.vz);
+    
     ch[0] = pkt.g_packet.ch[0];
     ch[1] = pkt.g_packet.ch[1];
     ch[2] = pkt.g_packet.ch[2];
