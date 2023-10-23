@@ -29,7 +29,7 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
-#define NUM_ARRAY_DATA 23
+#define NUM_ARRAY_DATA 14
 
 namespace SITL {
 

@@ -52,6 +52,7 @@ void Gazebo::set_interface_ports(const char* address, const int port_in, const i
 
     _gazebo_address = address;
     _gazebo_port = port_out;
+    printf("gazebo port %d\n",port_out);
     printf("Setting Gazebo interface to %s:%d \n", _gazebo_address, _gazebo_port);
 }
 
@@ -77,11 +78,11 @@ void Gazebo::send_servos(const struct sitl_input &input)
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
     
 
- //  pkt.serveo[0] = (ch[0] -0.5)*2.0;
- //  pkt.serveo[1] = (0.5 -ch[1] )*2.0;4P4
-   pkt.serveo[2] = ch[2];
- //  pkt.serveo[3] = (ch[3]-0.5)*2.0;
-   pkt.serveo[4] = 1-ch[2];
+   pkt.serveo[0] = (ch[0] -0.5)*2.0;
+   pkt.serveo[1] = (0.5 -ch[1] )*2.0;
+   pkt.serveo[2] = 1 - ch[2];
+   pkt.serveo[3] = (ch[3]-0.5)*2.0;
+   pkt.serveo[4] = ch[2];
 
    //printf("ch0 %f ch1 %f ch2 %f ch3 %f\n", ch[0],ch[1],ch[2],ch[3]);
 
@@ -125,52 +126,61 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
         time_now_us += 1;
         return;
     }
+   
 
     accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
                           pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
                           pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
 
-    //float p = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE / delta_time;
-    //float q = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE / delta_time;
-    //float r = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE / delta_time;
-    //gyro = Vector3f(-pkt.g_packet.body_pqr_rad[0], pkt.g_packet.body_pqr_rad[1], pkt.g_packet.body_pqr_rad[2]);
+    double roll_new = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE;
+    double pitch_new = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE;
+    double yaw_new = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE;
 
-                          
-  double p, q, r;
-    SIM::convert_body_frame(pkt.g_packet.orientation_rpy_deg[0], pkt.g_packet.orientation_rpy_deg[1],
-                             pkt.g_packet.rotation_rate_rpy_degps[0], pkt.g_packet.rotation_rate_rpy_degps[1], pkt.g_packet.rotation_rate_rpy_degps[2],
-                             &p, &q, &r);
-                             
-    //gyro = Vector3f(pkt.g_packet.body_pqr_rad[0], 
-      //              pkt.g_packet.body_pqr_rad[1],
-        //            pkt.g_packet.body_pqr_rad[2]);
+    float p = (roll_new - roll_old)/ deltat;
+    float q = (pitch_new - pitch_old)/ deltat;
+    float r = (yaw_new - yaw_old)/ deltat;
 
-    velocity_ef = Vector3f(pkt.g_packet.velocity_ned_fps[0] * FEET_TO_METERS, 
-                           pkt.g_packet.velocity_ned_fps[1] * FEET_TO_METERS,
-                           pkt.g_packet.velocity_ned_fps[2]  * FEET_TO_METERS);
+    gyro = Vector3f(p,q,r);
+
+    roll_old = roll_new;
+    pitch_old = pitch_new ;
+    yaw_old = yaw_new;
+
+   
 
     // compute dcm from imu orientation
   
-    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
-                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
-                    pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
+    dcm.from_euler(roll_new, pitch_new,yaw_new);
 
-  //printf("A:%.3f %.3f %.3f G:%.3f %.3f %.3f D:%.3f %.3f %.3f\n",accel_body.x,accel_body.y,accel_body.z,
-                                     //           gyro.x,gyro.y,gyro.z,
-                                      //          pkt.g_packet.orientation_rpy_deg[0],pkt.g_packet.orientation_rpy_deg[1],pkt.g_packet.orientation_rpy_deg[2]);
+   
 
    //printf(" g1:%f %f %f\n g2:%f %f %f \n",  gyro.x,gyro.y,gyro.z,p,q,r);
     location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
     location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
-    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
+    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f - 260.0f;
 
    // printf("alt %d\n",location.alt);
 
     position = origin.get_distance_NED_double(location);
-    //position = home.get_distance_NED_double(location);
+    
+    
+    float vx = (position.x-x_old)/deltat;
+    float vy = (position.y-y_old)/deltat;
+    float vz = (position.z -z_old )/deltat;
+    x_old = position.x;
+    y_old = position.y;
+    z_old = position.z;
 
-    //position.xy() = origin.get_distance_NE_double(home);
+    velocity_ef = Vector3f(vx,vy,vz);
+
+     printf("dt: %f vz: %f\n",deltat,vz);
+  printf("r: %f  p: %f y: %f\n", gyro.x,gyro.y,gyro.z);
+  printf("A:%.3f %.3f %.3f G:%.3f %.3f %.3f D:%.3f %.3f %.3f\n",accel_body.x,accel_body.y,accel_body.z,
+         gyro.x,gyro.y,gyro.z,
+         pkt.g_packet.orientation_rpy_deg[0],pkt.g_packet.orientation_rpy_deg[1],pkt.g_packet.orientation_rpy_deg[2]);
     printf("pos x: %f y:%f z: %f\n", position.x,position.y,position.z);
+    printf("home lat: %f lon: %f hgt:%f\n", home.lat*1e-7,home.lng*1e-7,home.alt*1e-2);
+    printf("curr lat: %f lon: %f hgt:%f\n", location.lat*1e-7,location.lng*1e-7,location.alt*1e-2);
     //printf("vz:%f alt:%f\n",velocity_ef.z, pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS);
    // printf("origin %d %d %d\n",origin.lat,origin.lng,origin.alt);
    // printf("home   %d %d %d\n",home.lat,home.lng,home.alt);
@@ -183,6 +193,8 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
     ch[1] = pkt.g_packet.ch[1];
     ch[2] = pkt.g_packet.ch[2];
     ch[3] = pkt.g_packet.ch[3];
+
+    printf("ch %f %f %f %f\n",pkt.g_packet.ch[0],pkt.g_packet.ch[1],pkt.g_packet.ch[2],pkt.g_packet.ch[3]);
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {
