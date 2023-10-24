@@ -18,31 +18,31 @@
       <!-- ##### Flight Controls -->
       <chunk>
 	<name>aileron</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/controls/flight/aileron</node>
       </chunk> 
 
       <chunk>
 	<name>elevator</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/controls/flight/elevator</node>
       </chunk> 
 
 	  <chunk>
 	<name>throttle</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/controls/engines/engine[0]/throttle</node>
       </chunk> 
 
       <chunk>
 	<name>rudder</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/controls/flight/rudder</node>
       </chunk> 
 
        <chunk>
 	<name>collective</name>
-	<type>float</type>
+	<type>double</type>
 	<node>/controls/engines/engine[0]/propeller-pitch</node>
       </chunk>
 

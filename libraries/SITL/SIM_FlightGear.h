@@ -47,8 +47,8 @@ typedef union u_packet{
 }U_packet;
 
 typedef union udp_in_packet{
-  float serveo[8];
-  uint32_t data[8];
+  double serveo[8];
+  uint64_t data[8];
 }Udp_in_packet;
 
 typedef struct fdm_data{
@@ -58,9 +58,9 @@ typedef struct fdm_data{
     float vx;
     float vy;
     float vz;
-    float pai;
-    float theta;
     float phi;
+    float theta;
+    float psi;
     float p;
     float q;
     float r;
@@ -108,7 +108,7 @@ namespace SITL {
 
       float ch[4]={0.0,0.0,0.0,0.0};
       Fdm_data old_data;
-      float dt = 0.05;
+      //float dt = 0.05;
   };
 
 }  // namespace SITL

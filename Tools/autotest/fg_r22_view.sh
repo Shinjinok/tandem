@@ -6,11 +6,11 @@
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
-    --generic=socket,in,10,,9999,udp,MAVLink \
-    --generic=socket,out,10,,9003,udp,MAVLink \
+    --generic=socket,in,20,,9999,udp,MAVLink \
+    --generic=socket,out,20,,9003,udp,MAVLink \
     --aircraft=R22 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
-    --airport=PHNL \
+    --airport=CMAC \
     --geometry=650x550 \
     --bpp=32 \
     --disable-hud-3d \
