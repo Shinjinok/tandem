@@ -69,11 +69,11 @@ void FlightGear::send_servos(const struct sitl_input &input)
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
     
 
-   //pkt.serveo[0] = (ch[0] -0.5)*2.0;
+   /*pkt.serveo[0] = (ch[0] -0.5)*2.0;
    pkt.serveo[1] = (-ch[1] +0.5)*2.0;
    pkt.serveo[2] = 0.0;
-   //pkt.serveo[3] = (ch[3]-0.5)*2.0;
-   pkt.serveo[4] = ch[2];
+   pkt.serveo[3] = (ch[3]-0.5)*2.0;
+   pkt.serveo[4] = ch[2];*/
 
     uint64_t data[5];
     data[0] = __bswap_64(pkt.data[0]);
@@ -116,7 +116,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(-pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
+    accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
                           -pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
                           pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
 
@@ -134,12 +134,12 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     Vector3f g = Vector3f(0.0f, 0.0f, -GRAVITY_MSS);
     Vector3f acc = dcm*g;
    
+    Location current;
+    current.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
+    current.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
+    current.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f + home.alt;
 
-    location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
-    location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
-    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f + home.alt;
-
-    position = origin.get_distance_NED_double(location);
+    position = origin.get_distance_NED_double(current);
 
     new_data.x = position.x;
     new_data.y = position.y;
