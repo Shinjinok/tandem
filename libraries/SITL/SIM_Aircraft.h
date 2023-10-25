@@ -220,7 +220,7 @@ protected:
 
     const float gyro_noise = radians(0.0f);
     const float accel_noise = 0.0f;
-    float rate_hz = 30.0f;
+    float rate_hz = 1000.0f;
     float target_speedup;
     uint64_t frame_time_us;
     uint64_t last_wall_time_us;

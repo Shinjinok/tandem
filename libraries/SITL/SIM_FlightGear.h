@@ -35,7 +35,7 @@
 typedef struct generic_packet {
   double timestamp;  // in seconds
   double ch[4];
-  double pilot_accel_nwu_xyz[3];
+  double pilot_accel_swu_xyz[3];
   double orientation_rpy_deg[3];
   double pqr_rad[3];
   double position_la_lon_alt[3];

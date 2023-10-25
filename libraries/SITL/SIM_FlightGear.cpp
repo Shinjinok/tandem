@@ -96,7 +96,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 100) != sizeof(fdm_data)) {
+    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 50) != sizeof(fdm_data)) {
         
         //send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
@@ -116,9 +116,9 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[0]),
-                          static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[1]),
-                          static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[2]))* FEET_TO_METERS;
+    accel_body = Vector3f(static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[0]),
+                          static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[1]),
+                          static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[2]))* FEET_TO_METERS;
 
     gyro = Vector3f(static_cast<float>(pkt.g_packet.pqr_rad[0]),
                     static_cast<float>(pkt.g_packet.pqr_rad[1]),
@@ -137,11 +137,11 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
  //   dcm.to_euler(&roll,&pitch,&yaw);
   
     Location current;
-    current.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
-    current.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
-    current.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f - home.alt;
+    location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
+    location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
+    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f - home.alt;
 
-    position = origin.get_distance_NED_double(current);
+    //position = origin.get_distance_NED_double(current);
     
    // printf("deltat %f\n",deltat);
   // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
@@ -156,10 +156,11 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     ch[3] = pkt.g_packet.ch[3];
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
-    if (deltat < 1.0 && deltat > 0) {
+    if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
     last_timestamp = pkt.g_packet.timestamp;
+    
 
 }
 
@@ -193,7 +194,7 @@ void FlightGear::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
-    //extrapolate_sensors(delta_time);
+    //extrapolate_sensors(0.001);       // don't go past the nex);
     
     update_position();
 
@@ -201,7 +202,9 @@ void FlightGear::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
     drain_sockets();
+    
 }
+
 
 }  // namespace SITL
 
