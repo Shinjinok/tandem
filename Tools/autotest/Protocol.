@@ -164,19 +164,19 @@
 	  <chunk>
 			<name>speed-north-fps</name>
 			<type>double</type>
-			<node>/velocities/speed-north-fps</node>
+			<node>/velocity/speed-north-fps</node>
       </chunk> 
 
       <chunk>
 			<name>speed-east-fps</name>
 			<type>double</type>
-			<node>/velocities/speed-east-fps</node>
+			<node>/velocity/speed-east-fps</node>
       </chunk> 
 
 	   <chunk>
 			<name>speed-down-fps</name>
 			<type>double</type>
-			<node>/velocities/speed-down-fps</node>
+			<node>/velocity/speed-down-fps</node>
       </chunk>   
 
 

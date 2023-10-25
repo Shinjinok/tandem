@@ -624,20 +624,20 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     const float delta_time = frame_time_us * 1.0e-6f;
 
     // update rotational rates in body frame
-    gyro += rot_accel * delta_time;
+    //gyro += rot_accel * delta_time;
 
     gyro.x = constrain_float(gyro.x, -radians(2000.0f), radians(2000.0f));
     gyro.y = constrain_float(gyro.y, -radians(2000.0f), radians(2000.0f));
     gyro.z = constrain_float(gyro.z, -radians(2000.0f), radians(2000.0f));
 
     // update attitude
-    dcm.rotate(gyro * delta_time);
-    dcm.normalize();
+    //dcm.rotate(gyro * delta_time);
+    //dcm.normalize();
 
     Vector3f accel_earth = dcm * accel_body;
     accel_earth += Vector3f(0.0f, 0.0f, GRAVITY_MSS);
 
-    printf("accel_earth: %f %f %f\n",accel_earth.x,accel_earth.y,accel_earth.z);
+
 
     // if we're on the ground, then our vertical acceleration is limited
     // to zero. This effectively adds the force of the ground on the aircraft
@@ -647,14 +647,14 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
 
     // work out acceleration as seen by the accelerometers. It sees the kinematic
     // acceleration (ie. real movement), plus gravity
-    accel_body = dcm.transposed() * (accel_earth + Vector3f(0.0f, 0.0f, -GRAVITY_MSS));
+   // accel_body = dcm.transposed() * (accel_earth + Vector3f(0.0f, 0.0f, -GRAVITY_MSS));
 
     // new velocity vector
-    velocity_ef += accel_earth * delta_time;
+    //velocity_ef += accel_earth * delta_time;
 
     const bool was_on_ground = on_ground();
     // new position vector
-    position += (velocity_ef * delta_time).todouble();
+   // position += (velocity_ef * delta_time).todouble();
 
     // velocity relative to air mass, in earth frame
     velocity_air_ef = velocity_ef - wind_ef;

@@ -1,0 +1,1 @@
+sudo cp MAVLink.xml /usr/share/games/flightgear/Protocol/.

@@ -62,18 +62,18 @@ void FlightGear::send_servos(const struct sitl_input &input)
 {
    udp_in_packet pkt;
 
-    pkt.serveo[0] = (input.servos[0]-1500) / 500.0f *2.0;
-    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f *2.0;
+    pkt.serveo[0] = (input.servos[0]-1500) / 500.0f ;
+    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f;
     pkt.serveo[2] = (2000- input.servos[2]) / 1000.0f;
-    pkt.serveo[3] = (input.servos[3]-1500) / 500.0f *2.0;
+    pkt.serveo[3] = (input.servos[3]-1500) / 500.0f ;
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
     
 
-   /*pkt.serveo[0] = (ch[0] -0.5)*2.0;
-   pkt.serveo[1] = (-ch[1] +0.5)*2.0;
+   //pkt.serveo[0] = (ch[0] -0.5)*2.0;
+   //pkt.serveo[1] = (-ch[1] +0.5)*2.0;
    pkt.serveo[2] = 0.0;
-   pkt.serveo[3] = (ch[3]-0.5)*2.0;
-   pkt.serveo[4] = ch[2];*/
+   //pkt.serveo[3] = (ch[3]-0.5)*2.0;
+   pkt.serveo[4] = ch[2];
 
     uint64_t data[5];
     data[0] = __bswap_64(pkt.data[0]);
@@ -116,67 +116,47 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(pkt.g_packet.pilot_accel_nwu_xyz[0] * FEET_TO_METERS,
-                          -pkt.g_packet.pilot_accel_nwu_xyz[1] * FEET_TO_METERS,
-                          pkt.g_packet.pilot_accel_nwu_xyz[2] * FEET_TO_METERS);
+    accel_body = Vector3f(static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[0]),
+                          static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[1]),
+                          static_cast<float>(pkt.g_packet.pilot_accel_nwu_xyz[2]))* FEET_TO_METERS;
 
+    gyro = Vector3f(static_cast<float>(pkt.g_packet.pqr_rad[0]),
+                    static_cast<float>(pkt.g_packet.pqr_rad[1]),
+                    static_cast<float>(pkt.g_packet.pqr_rad[2]));
+
+     // compute dcm from imu orientation
+    dcm.from_euler(static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,
+                    static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,
+                    static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE);
+
+    velocity_ef = Vector3f(static_cast<float>(pkt.g_packet.speed_ned_fps[0]),
+                           static_cast<float>(pkt.g_packet.speed_ned_fps[1]),
+                           static_cast<float>(pkt.g_packet.speed_ned_fps[2]))*FEET_TO_METERS;
     
-    Fdm_data new_data;                         
-    new_data.phi = pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE;
-    new_data.theta = pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE;
-    new_data.psi = pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE;
-    // compute dcm from imu orientation
-    dcm.from_euler(new_data.theta,new_data.phi,new_data.psi);
-    //Vector3f rad = Vector3f(new_data.phi,new_data.theta, new_data.psi);
-    //Quaternion quat;
-    //quat.from_axis_angle(rad);
-    //quat.rotation_matrix(dcm);
-    Vector3f g = Vector3f(0.0f, 0.0f, -GRAVITY_MSS);
-    Vector3f acc = dcm*g;
-   
+ //   float roll,pitch,yaw;
+ //   dcm.to_euler(&roll,&pitch,&yaw);
+  
     Location current;
     current.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
     current.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
-    current.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f + home.alt;
+    current.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f - home.alt;
 
     position = origin.get_distance_NED_double(current);
-
-    new_data.x = position.x;
-    new_data.y = position.y;
-    new_data.z = position.z;
-
-
-    new_data.p = (new_data.phi - old_data.phi) / deltat;
-    new_data.q = (new_data.theta - old_data.theta) / deltat;
-    new_data.r = (new_data.psi - old_data.psi) / deltat;
-    //gyro = Vector3f(new_data.p, new_data.q, new_data.r);
-
-    double p, q, r;
-    SIM::convert_body_frame(degrees(new_data.phi ), degrees(new_data.theta),
-                             degrees(new_data.p), degrees(new_data.q ), degrees(new_data.r ),
-                             &p, &q, &r);
-    gyro = Vector3f(p, q, r);
-
-    new_data.vx = (new_data.x - old_data.x) /deltat;
-    new_data.vy = (new_data.y - old_data.y) /deltat;
-    new_data.vz = (new_data.z - old_data.z) /deltat;
-    velocity_ef = Vector3f(new_data.vx, new_data.vy, new_data.vz);
-
-
-    old_data = new_data;
-    printf("deltat %f\n",deltat);
-    printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
-                                                gyro.x,gyro.y,gyro.z, new_data.vx, new_data.vy,new_data.vz);
-    printf("a: %3.3f %3.3f %3.3f \n",acc.x,acc.y,acc.z);
     
-    printf("P: %f %f %f\n",new_data.x,new_data.y,new_data.z);
+   // printf("deltat %f\n",deltat);
+  // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
+   //                                             gyro.x,gyro.y,gyro.z, velocity_ef.x, velocity_ef.y,velocity_ef.z);
+   // printf("P: %f %f %f\n",position.x,position.y,position.z);
+  //  printf("roll %f %f  pitch %f %f  yaw  %f %f\n",static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,roll,
+  //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,pitch,
+  //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE,yaw);
     ch[0] = pkt.g_packet.ch[0];
     ch[1] = pkt.g_packet.ch[1];
     ch[2] = pkt.g_packet.ch[2];
     ch[3] = pkt.g_packet.ch[3];
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
-    if (deltat < 0.01 && deltat > 0) {
+    if (deltat < 1.0 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
     last_timestamp = pkt.g_packet.timestamp;
