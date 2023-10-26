@@ -63,17 +63,17 @@ void FlightGear::send_servos(const struct sitl_input &input)
    udp_in_packet pkt;
 
     pkt.serveo[0] = (input.servos[0]-1500) / 500.0f ;
-    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f;
-    pkt.serveo[2] = (2000- input.servos[2]) / 1000.0f;
+    pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f ;
+    pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
     pkt.serveo[3] = (input.servos[3]-1500) / 500.0f ;
     pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
     
 
    //pkt.serveo[0] = (ch[0] -0.5)*2.0;
    //pkt.serveo[1] = (-ch[1] +0.5)*2.0;
-   pkt.serveo[2] = 0.0;
+   //pkt.serveo[2] = 0.0;
    //pkt.serveo[3] = (ch[3]-0.5)*2.0;
-   pkt.serveo[4] = ch[2];
+    //pkt.serveo[4] = rcin[2];
 
     uint64_t data[5];
     data[0] = __bswap_64(pkt.data[0]);
@@ -81,7 +81,7 @@ void FlightGear::send_servos(const struct sitl_input &input)
     data[2] = __bswap_64(pkt.data[2]);
     data[3] = __bswap_64(pkt.data[3]);
     data[4] = __bswap_64(pkt.data[4]);
-    socket_sitl.sendto(&data, sizeof(data), _flightgear_address, 9999);
+    socket_sitl.sendto(&data, sizeof(data), _flightgear_address, _flightgear_port);
 }
 
 /*
@@ -96,9 +96,9 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 50) != sizeof(fdm_data)) {
+    while (socket_sitl.recv(&fdm_data, sizeof(fdm_data), 100) != sizeof(fdm_data)) {
         
-        //send_servos(input);
+        send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
         if (get_wall_time_us() > last_wall_time_us + FLIGHTGEAR_TIMEOUT_US) {
             last_timestamp = 0;
@@ -116,51 +116,59 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
         return;
     }
 
-    accel_body = Vector3f(static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[0]),
-                          static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[1]),
-                          static_cast<float>(pkt.g_packet.pilot_accel_swu_xyz[2]))* FEET_TO_METERS;
+    accel_body = Vector3f(pkt.g_packet.pilot_accel_swu_xyz[0]* FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_swu_xyz[1]* FEET_TO_METERS,
+                          pkt.g_packet.pilot_accel_swu_xyz[2]* FEET_TO_METERS);
 
-    gyro = Vector3f(static_cast<float>(pkt.g_packet.pqr_rad[0]),
-                    static_cast<float>(pkt.g_packet.pqr_rad[1]),
-                    static_cast<float>(pkt.g_packet.pqr_rad[2]));
+    gyro = Vector3f(pkt.g_packet.pqr_rad[0],
+                    pkt.g_packet.pqr_rad[1],
+                    pkt.g_packet.pqr_rad[2]);
 
-     // compute dcm from imu orientation
-    dcm.from_euler(static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,
-                    static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,
-                    static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE);
-
-    velocity_ef = Vector3f(static_cast<float>(pkt.g_packet.speed_ned_fps[0]),
-                           static_cast<float>(pkt.g_packet.speed_ned_fps[1]),
-                           static_cast<float>(pkt.g_packet.speed_ned_fps[2]))*FEET_TO_METERS;
+    velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
+                           pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
+                           pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
     
  //   float roll,pitch,yaw;
  //   dcm.to_euler(&roll,&pitch,&yaw);
-  
-    Location current;
+
     location.lat = pkt.g_packet.position_la_lon_alt[0] * 1.0e7;
     location.lng = pkt.g_packet.position_la_lon_alt[1] * 1.0e7;
-    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f - home.alt;
+    location.alt = pkt.g_packet.position_la_lon_alt[2]* FEET_TO_METERS * 100.0f;
 
-    //position = origin.get_distance_NED_double(current);
+    position = origin.get_distance_NED_double(location);
+    Vector3d home_pos = origin.get_distance_NED_double(home);
+
+     // compute dcm from imu orientation
+    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
+                    pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
+    //rpm[0] = pkt.g_packet.rpm;
+    //rpm[1] = pkt.g_packet.rpm;
+    //smooth_sensors();                    
     
-   // printf("deltat %f\n",deltat);
+   //printf("deltat %f rpm %f\n",deltat,pkt.g_packet.rpm);
   // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
    //                                             gyro.x,gyro.y,gyro.z, velocity_ef.x, velocity_ef.y,velocity_ef.z);
-   // printf("P: %f %f %f\n",position.x,position.y,position.z);
+    printf("P: %f %f %f\n",position.x,position.y,position.z);
+    printf("H: %f %f %f\n",home_pos.x,home_pos.y,home_pos.z);
   //  printf("roll %f %f  pitch %f %f  yaw  %f %f\n",static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,roll,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,pitch,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE,yaw);
-    ch[0] = pkt.g_packet.ch[0];
-    ch[1] = pkt.g_packet.ch[1];
-    ch[2] = pkt.g_packet.ch[2];
-    ch[3] = pkt.g_packet.ch[3];
+   // rcin[0] = pkt.g_packet.ch[0];
+   // rcin[1] = pkt.g_packet.ch[1];
+  //  rcin[2] = pkt.g_packet.ch[2];
+  //  rcin[3] = pkt.g_packet.ch[3];
+   
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
-    if (deltat < 0.01 && deltat > 0) {
+    if (deltat < 0.2 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
-    last_timestamp = pkt.g_packet.timestamp;
     
+   
+        
+
+    last_timestamp = pkt.g_packet.timestamp;
 
 }
 

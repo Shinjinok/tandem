@@ -29,7 +29,7 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
-#define NUM_ARRAY_DATA 20
+#define NUM_ARRAY_DATA 21
 
 
 typedef struct generic_packet {
@@ -40,6 +40,7 @@ typedef struct generic_packet {
   double pqr_rad[3];
   double position_la_lon_alt[3];
   double speed_ned_fps[3];
+  double rpm;
   
 }Generic_packet;
 
@@ -105,12 +106,11 @@ namespace SITL {
 
       SocketAPM socket_sitl;
       const char *_flightgear_address = "127.0.0.1";
-      int _flightgear_port = 5001;
+      int _flightgear_port = 9002;
       static const uint64_t FLIGHTGEAR_TIMEOUT_US = 5000000;
 
       float ch[4]={0.0,0.0,0.0,0.0};
-      Fdm_data old_data;
-      //float dt = 0.05;
+      int count = 0;
   };
 
 }  // namespace SITL
