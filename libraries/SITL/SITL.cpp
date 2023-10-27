@@ -19,6 +19,7 @@
 
 #include "SITL.h"
 
+#define AP_SIM_ENABLED 1
 #if AP_SIM_ENABLED
 
 #include <AP_Common/AP_Common.h>
@@ -38,6 +39,8 @@
 #endif // SFML_JOYSTICK
 
 extern const AP_HAL::HAL& hal;
+
+#define SIM_RATE_HZ_DEFAULT 1200
 
 #ifndef SIM_RATE_HZ_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

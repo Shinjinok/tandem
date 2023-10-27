@@ -29,29 +29,35 @@
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
-#define NUM_ARRAY_DATA 21
+#define NUM_ARRAY_DATA 18
 
 
 typedef struct generic_packet {
   double timestamp;  // in seconds
-  double ch[4];
-  double pilot_accel_swu_xyz[3];
-  double orientation_rpy_deg[3];
-  double pqr_rad[3];
-  double position_la_lon_alt[3];
-  double speed_ned_fps[3];
-  double rpm;
-  
+  double lat_lon[2];
+  float alt;
+  float ch[4];
+  float pilot_accel_swu_xyz[3];
+  float orientation_rpy_deg[3];
+  float pqr_rad[3];
+  float speed_ned_fps[3];
+  float rpm;
+  //float uvw_body[3];
 }Generic_packet;
+
+typedef struct d_packet{
+  uint64_t data64[3];
+  uint32_t data32[18];
+}D_packet;
 
 typedef union u_packet{
   Generic_packet g_packet;
-  uint64_t data64[NUM_ARRAY_DATA];
+  D_packet dp;
 }U_packet;
 
 typedef union udp_in_packet{
-  double serveo[8];
-  uint64_t data[8];
+  float serveo[8];
+  uint32_t data[8];
 }Udp_in_packet;
 
 typedef struct fdm_data{

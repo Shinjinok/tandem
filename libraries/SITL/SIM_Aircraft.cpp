@@ -232,7 +232,7 @@ void Aircraft::update_mag_field_bf()
     mag_bf = dcm.transposed() * mag_ef;
 
     // add motor interference
-    mag_bf += sitl->mag_mot.get() * battery_current;
+    //mag_bf += sitl->mag_mot.get() * battery_current;
 }
 
 /* advance time by deltat in seconds */
