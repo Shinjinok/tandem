@@ -61,19 +61,19 @@
  		<chunk>
 			<name>latitude</name>
 			<type>double</type>
-			<node>/position/latitude-deg</node>
+			<node>/position/model/latitude-deg</node>
       </chunk> 
 
       <chunk>
 			<name>longitude</name>
 			<type>double</type>
-			<node>/position/longitude-deg</node>
+			<node>/position/model/longitude-deg</node>
       </chunk> 
 
 	   <chunk>
 			<name>altitude</name>
 			<type>float</type>
-			<node>/position/altitude-ft</node>
+			<node>/position/gear-agl-m</node>
       </chunk>  
 
  	<chunk>

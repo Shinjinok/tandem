@@ -96,7 +96,10 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    while (socket_sitl.recv(&dp, sizeof(dp), 100) != sizeof(dp)) {
+    uint32_t now = AP_HAL::millis();
+    uint32_t taken_ms = now - last_one_hz_ms;
+    last_one_hz_ms = now;
+    while (socket_sitl.recv(&dp, sizeof(dp), 1) != sizeof(dp)) {
         
         //send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear reset
@@ -104,6 +107,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
             last_timestamp = 0;
         }
     }
+    
 
     for (long unsigned int i=0; i < 3; i++){
         pkt.dp.data64[i] = __bswap_64(dp.data64[i]);
@@ -137,7 +141,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
 
     location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
     location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
-    location.alt = pkt.g_packet.alt * FEET_TO_METERS * 100.0f;
+    location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
 
     position = origin.get_distance_NED_double(location);
    // Vector3d home_pos = origin.get_distance_NED_double(home);
@@ -153,7 +157,9 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     //rpm[1] = pkt.g_packet.rpm;
     //smooth_sensors();                    
     
-   printf("deltat %f  RPM: %f----------------------------------\n",deltat,pkt.g_packet.rpm);
+    
+   printf("deltat %f  ms: %d----------------------------------\n",deltat,taken_ms);
+  
   // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
    //                                             gyro.x,gyro.y,gyro.z, velocity_ef.x, velocity_ef.y,velocity_ef.z);
     printf("P: %d %d %d\n",location.lat,location.lng,location.alt);
@@ -177,6 +183,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     if (deltat < 0.001 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
+    
     
     last_timestamp = pkt.g_packet.timestamp;
 

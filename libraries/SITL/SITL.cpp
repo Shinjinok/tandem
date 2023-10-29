@@ -40,7 +40,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define SIM_RATE_HZ_DEFAULT 1200
 
 #ifndef SIM_RATE_HZ_DEFAULT
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
