@@ -43,7 +43,7 @@
        <chunk>
 	<name>collective</name>
 	<type>float</type>
-	<node>/controls/engines/engine[0]/propeller-pitch</node>
+	<node>/controls/engines/engine[1]/throttle</node>
       </chunk>
 
     </input>

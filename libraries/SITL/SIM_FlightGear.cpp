@@ -64,9 +64,9 @@ void FlightGear::send_servos(const struct sitl_input &input)
 
     pkt.serveo[0] = (input.servos[0]-1500) / 500.0f ;
     pkt.serveo[1] = -(input.servos[1]-1500) / 500.0f ;
-    pkt.serveo[2] = (input.servos[2]-1000) / 1000.0f;
+    pkt.serveo[2] = (2000-input.servos[2]) / 1000.0f;
     pkt.serveo[3] = (input.servos[3]-1500) / 500.0f ;
-    pkt.serveo[4] = (input.servos[2]-1000) / 1000.0f;
+    pkt.serveo[4] = (2000-input.servos[2]) / 1000.0f;
     
 
    //pkt.serveo[0] = (ch[0] -0.5)*2.0;
