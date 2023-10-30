@@ -1,10 +1,5 @@
-commit 79b3b3e8cdcf73134b8729670afcecfaab2211e8
-Author: Ryan Friedman <ryanfriedman5410+github@gmail.com>
-Date:   Mon Mar 13 10:02:57 2023 -0600
+commit 3adf6a16d161aec2085ad433f9a07ad2301175ac
+Author: Shinjinok <bartshin00@gmail.com>
+Date:   Mon Oct 30 09:38:04 2023 +0900
 
-    gitmodules: Bump up benchmark to v1.7.1 release
-    
-    * https://github.com/google/benchmark/releases/tag/v1.7.1
-    * Solves #23193
-    
-    Signed-off-by: Ryan Friedman <ryanfriedman5410+github@gmail.com>
+    Rename Protocol. to Protocol

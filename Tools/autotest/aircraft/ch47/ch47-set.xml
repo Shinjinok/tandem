@@ -401,6 +401,33 @@ CH-47 Chinook simulation config.
         <CH47>
             <file>Aircraft/ch47/Nasal/systems.nas</file>
             <file>Aircraft/ch47/Nasal/Electrical.nas</file>
+            <script>
+         setlistener("/sim/signals/fdm-initialized", func {
+             var left  = screen.display.new(20, 10);
+             left.add("/controls/engines/engine[0]/throttle");
+             left.add("/controls/engines/engine[0]/propeller-pitch");
+             left.add("/controls/flight/aileron");
+             left.add("/controls/flight/elevator");
+             left.add("/controls/flight/rudder");
+             
+
+              var right = screen.display.new(-250, 20);
+             right.add("/position/altitude-agl-ft");
+             right.add("rotors/main/rpm");
+             right.add("/orientation/roll-deg");
+             right.add("/orientation/pitch-deg");
+             right.add("/orientation/heading-deg");
+             right.add("/orientation/roll-rate-degps");
+             right.add("/orientation/pitch-rate-degps");
+             right.add("/orientation/yaw-rate-degps");
+             right.add("/accelerations/pilot/x-accel-fps_sec");
+             right.add("/accelerations/pilot/y-accel-fps_sec");
+             right.add("/accelerations/pilot/z-accel-fps_sec");
+             right.add("/velocities/speed-north-fps");
+             right.add("/velocities/speed-east-fps");
+             right.add("/velocities/speed-down-fps");
+         });
+        </script>
         </CH47>
     </nasal>
 
