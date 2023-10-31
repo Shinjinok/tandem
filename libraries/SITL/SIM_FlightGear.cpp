@@ -69,11 +69,12 @@ void FlightGear::send_servos(const struct sitl_input &input)
     pkt.serveo[4] = (2000-input.servos[2]) / 1000.0f;
     
 
-   //pkt.serveo[0] = (ch[0] -0.5)*2.0;
-   //pkt.serveo[1] = (-ch[1] +0.5)*2.0;
-   //pkt.serveo[2] = 0.0;
-   //pkt.serveo[3] = (ch[3]-0.5)*2.0;
-    //pkt.serveo[4] = rcin[2];
+    /*pkt.serveo[0] = (ch[0] -0.5)*2.0;
+    pkt.serveo[1] = (-ch[1] +0.5)*2.0;
+    pkt.serveo[2] = 1.0- ch[2];
+    pkt.serveo[3] = (ch[3]-0.5)*2.0;
+    pkt.serveo[4] = 1.0- ch[2];*/
+
 
     uint32_t data[5];
     data[0] = __bswap_32(pkt.data[0]);
@@ -173,10 +174,10 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
   //  printf("roll %f %f  pitch %f %f  yaw  %f %f\n",static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,roll,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,pitch,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE,yaw);
-   // rcin[0] = pkt.g_packet.ch[0];
-   // rcin[1] = pkt.g_packet.ch[1];
-  //  rcin[2] = pkt.g_packet.ch[2];
-  //  rcin[3] = pkt.g_packet.ch[3];
+    ch[0] = pkt.g_packet.ch[0];
+    ch[1] = pkt.g_packet.ch[1];
+    ch[2] = pkt.g_packet.ch[2];
+    ch[3] = pkt.g_packet.ch[3];
    
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 

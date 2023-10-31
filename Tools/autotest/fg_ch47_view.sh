@@ -1,0 +1,27 @@
+#!/bin/sh
+#https://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
+#./sim_vehicle.py -v ArduCopter -f heli -L PHNL --model flightgear:127.0.0.1 --map --console
+#    --generic=socket,in,10,,5003,udp,MAVLink \
+#    --generic=socket,out,10,,5001,udp,MAVLink \
+AUTOTESTDIR=$(dirname $0)
+
+nice fgfs \
+    --generic=socket,in,30,,9002,udp,MAVLink \
+    --generic=socket,out,30,,9003,udp,MAVLink \
+    --model-hz=1000 \
+    --aircraft=ch47 \
+    --fg-aircraft="$AUTOTESTDIR/aircraft" \
+    --airport=CMAC \
+    --geometry=650x550 \
+    --bpp=32 \
+    --disable-hud-3d \
+    --disable-horizon-effect \
+    --timeofday=noon \
+    --disable-fullscreen \
+    --disable-random-objects \
+    --disable-ai-models \
+    --fog-disable \
+    --disable-specular-highlight \
+    --disable-anti-alias-hud \
+    --wind=0@0 \
+    $*
