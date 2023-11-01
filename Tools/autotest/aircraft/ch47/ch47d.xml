@@ -91,10 +91,10 @@ Max weight 50,000 lbs
 
         <control-input axis="controls/flight/rudder" control="CYCLICAIL"
            src0="-1.0" src1="1.0"
-           dst0="-0.06" dst1="0.06"/>
+           dst0="-0.04" dst1="0.04"/>
         <control-input axis="controls/flight/aileron" control="CYCLICAIL"
            src0="-1.0" src1="1.0"
-           dst0="-0.06" dst1="0.06"/>
+           dst0="-0.04" dst1="0.04"/>
         <control-input axis="controls/flight/elevator" control="COLLECTIVE"
            src0="-1.0" src1="1.0"
            dst0="0.02" dst1="-0.02"/>
@@ -179,11 +179,11 @@ Max weight 50,000 lbs
         control="CYCLICAIL"
         invert="true"
         src0="-1.0" src1="1.0"
-        dst0="-0.06" dst1="0.06"/>
+        dst0="-0.04" dst1="0.04"/>
         <control-input axis="controls/flight/aileron"
         control="CYCLICAIL"
         src0="-1.0" src1="1.0"
-        dst0="-0.06" dst1="0.06"/>
+        dst0="-0.04" dst1="0.04"/>
         <control-input axis="controls/flight/elevator"
         control="COLLECTIVE"
         src0="-1.0" src1="1.0"
