@@ -65,9 +65,11 @@ void AP_ExternalAHRS_FlightGear::update_thread(void)
     }
 
     while (true) {
-        build_packet();
+        //build_packet();
+        post_imu();
         post_filter();
         hal.scheduler->delay_microseconds(100);
+        
     }
 }
 
@@ -114,10 +116,10 @@ void AP_ExternalAHRS_FlightGear::post_imu() const
 {
     {
         WITH_SEMAPHORE(state.sem);
-        state.accel = imu_data.accel;
-        state.gyro = imu_data.gyro;
+        state.accel = Vector3f(0.0,0.0,1.0);
+        state.gyro = Vector3f(0.0,0.0,0.0);
 
-        state.quat = imu_data.quat;
+        state.quat = Quaternion(0.0,0.0,0.0,1.0);
         state.have_quaternion = true;
     }
 
@@ -151,17 +153,18 @@ void AP_ExternalAHRS_FlightGear::post_imu() const
     }
 #endif
 }
-
+/*
 void AP_ExternalAHRS_FlightGear::post_filter() const
 {
     {
         WITH_SEMAPHORE(state.sem);
         state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
         state.have_velocity = true;
-
-        //state.location = Location{filter_data.lat, filter_data.lon, gnss_data.msl_altitude, Location::AltFrame::ABSOLUTE};
-        state.location = Location{123, 456, 789, Location::AltFrame::ABSOLUTE};
+        
+        state.location = Location{filter_data.lat, filter_data.lon, gnss_data.msl_altitude, Location::AltFrame::ABSOLUTE};
+        
         state.have_location = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FlightGear In the post_filter!");
     }
 
     AP_ExternalAHRS::gps_data_message_t gps {
@@ -199,8 +202,56 @@ void AP_ExternalAHRS_FlightGear::post_filter() const
     if (AP::gps().get_first_external_instance(instance)) {
         AP::gps().handle_external(gps, instance);
     }
-}
+}*/
+void AP_ExternalAHRS_FlightGear::post_filter() const
+{
+    {
+        WITH_SEMAPHORE(state.sem);
+        state.velocity = Vector3f{filter_data.ned_velocity_north, filter_data.ned_velocity_east, filter_data.ned_velocity_down};
+        state.have_velocity = true;
+        
+        state.location = Location{filter_data.lat, filter_data.lon, gnss_data.msl_altitude, Location::AltFrame::ABSOLUTE};
+        
+        state.have_location = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "FlightGear In the post_filter!");
+    }
 
+    AP_ExternalAHRS::gps_data_message_t gps {
+        gps_week: filter_data.week,
+        ms_tow: filter_data.tow_ms,
+        fix_type: (uint8_t) gnss_data.fix_type,
+        satellites_in_view: gnss_data.satellites,
+
+        horizontal_pos_accuracy: gnss_data.horizontal_position_accuracy,
+        vertical_pos_accuracy: gnss_data.vertical_position_accuracy,
+        horizontal_vel_accuracy: gnss_data.speed_accuracy,
+
+        hdop: gnss_data.hdop,
+        vdop: gnss_data.vdop,
+
+        longitude: filter_data.lon,
+        latitude: filter_data.lat,
+        msl_altitude: gnss_data.msl_altitude,
+
+        ned_vel_north: filter_data.ned_velocity_north,
+        ned_vel_east: filter_data.ned_velocity_east,
+        ned_vel_down: filter_data.ned_velocity_down,
+    };
+
+   // if (gps.fix_type >= 3 && !state.have_origin) {
+        WITH_SEMAPHORE(state.sem);
+        state.origin = Location{375795350,
+                                1269797530,
+                                100,
+                                Location::AltFrame::ABSOLUTE};
+        state.have_origin = true;
+ //   }
+
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
+}
 int8_t AP_ExternalAHRS_FlightGear::get_port(void) const
 {
     if (!uart) {

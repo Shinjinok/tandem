@@ -60,26 +60,19 @@ def mps2kt(x):
     return x / 0.514444444
 
 udp = udp_socket("127.0.0.1:5001")
-#fgout = udp_socket("127.0.0.1:5003", is_input=False)
+fgout = udp_socket("127.0.0.1:5003", is_input=False)
 
 tlast = time.time()
 count = 0
 
 fg = fgFDM.fgFDM()
 
+
 rud = 1
 while True:
     udp_buffer = udp.recv(1000)
     fg.parse(udp_buffer)
-    if rud==10:
-        rud = -10
-        fg.set('rudder',rud)
-    else :
-        rud = 10
-        fg.set('rudder',rud)
-        
-        
-    #fgout.write(fg.pack())
+   
     count += 1
     if time.time() - tlast > 1.0:
         print("%u FPS len=%u" % (count, len(udp_buffer)))
@@ -89,3 +82,12 @@ while True:
               fg.get('longitude', units='degrees'),
               fg.get('altitude', units='meters'),
               fg.get('vcas', units='mps'))
+        if rud==1:
+            rud = -1
+            fgo.set('rudder',rud)
+        else :
+            rud = 1
+            fgo.set('rudder',rud)
+            
+            
+        fgout.write(fgo.pack())
