@@ -3,9 +3,9 @@
 //usage:
 //PARAMS:
 // param set AHRS_EKF_TYPE 11
-// param set EAHRS_TYPE 2
-// param set SERIAL4_PROTOCOL 36
-// param set SERIAL4_BAUD 115
+// param set EAHRS_TYPE 3
+// param set SERIAL1_PROTOCOL 36
+// param set SERIAL1_BAUD 480
 // sim_vehicle.py -v ArduPlane -D --console --map -A --uartE=sim:MicroStrain
 #pragma once
 

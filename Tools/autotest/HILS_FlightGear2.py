@@ -1,8 +1,30 @@
 #HILS for run ./fg_ch47_view.sh
 #virtual serial port  socat -d -d pty,raw,echo=0 pty,raw,echo=0
+#usage:
+#PARAMS:
+# param set AHRS_EKF_TYPE 11
+# param set EAHRS_TYPE 3
+# param set SERIAL1_PROTOCOL 36
+# param set SERIAL1_BAUD 480
+
+
+"""
+struct PACKED Generic_packet {
+  double timestamp;  // in seconds
+  double lat_lon[2];
+  float alt;
+  float ch[4];
+  float pilot_accel_swu_xyz[3];
+  float orientation_rpy_deg[3];
+  float pqr_rad[3];
+  float speed_ned_fps[3];
+  float rpm;
+  //float uvw_body[3];
+};
+"""
 
 import socket
-from struct import pack, unpack
+from struct import pack, unpack,calcsize
 import serial
 import threading
 import time
@@ -25,6 +47,7 @@ class usbSerial(object):
       exit()
     self.serial_data_in = None
     self.serial_data_in_flag  = False
+    self.udp_raw_data_in =None
     self.lock = threading.Lock()
     t = threading.Thread(target=self.listen)
     t.start()
@@ -32,7 +55,8 @@ class usbSerial(object):
   def listen(self):
     while True:
       self.serial_data_in = self.seri.readline()
-      self.serial_data_in_flag = True
+      if len(self.serial_data_in) > 0 :
+          self.serial_data_in_flag = True
 
 
   def write(self, data):
@@ -51,7 +75,7 @@ class udp_socket(object):
     self.udp_data_in = None
     self.udp_data_in_flag = False
 
-    self.ser = serial.Serial(PORT, baudrate=115200, timeout=1)
+    #self.ser = serial.Serial(PORT, baudrate=115200, timeout=1)
 
     t = threading.Thread(target=self.listen_clients)
     t.start()
@@ -67,6 +91,7 @@ class udp_socket(object):
     print("start thread\n")
     while True:
       data_udp ,addr= self.port.recvfrom(1024)
+      self.udp_raw_data_in = data_udp
       self.udp_data_in = unpack('>dddffffffffffffffffff',data_udp)
       self.udp_data_in_flag = True
 
@@ -80,62 +105,34 @@ if __name__ == '__main__':
   seri2 = None#usbSerial(PORT2)
 
   count = 1
+  head = pack('<3B',0xFE, 0xBB, 0xAA)
 
  
   while True:
     
-    seri.write(bytes("test serial tx rx",encoding='ascii'))
-    print("write to serial 1")
+    """     seri.write(bytes("test serial tx rx\n",encoding='ascii'))
+    print("write to serial 1") """
     time.sleep(1)
     if udp.udp_data_in_flag:
       udp.udp_data_in_flag = False
-      out = str(udp.udp_data_in[0])+"\n"
-      print("udp received data",udp.udp_data_in[0] )
-      seri.write(bytes(out,encoding='ascii'))
+      serial_out = [head, udp.udp_raw_data_in]
+      
+      print(head)
+      #seri.write(bytes(head))
+      print(len(udp.udp_raw_data_in))
+      seri.write(bytes(head)+bytes(udp.udp_raw_data_in))
+      seri.write(bytes(udp.udp_raw_data_in))
+      print(bytes(head)+bytes(udp.udp_raw_data_in))
+      print(bytes(udp.udp_raw_data_in))
+
       print("write to serial 1")
 
      # print("write serial1\n")
-    
-    if seri2.serial_data_in_flag:
-      seri2.serial_data_in_flag = False
-      #print(seri2.serial_data_in)
-      print("serial2 received data ",seri2.serial_data_in)
-
-      if count == 1:
-        count = 0
-        strdata=""
-        ch = [0.0,0.0,0.0,1.0,0.0]
-        
-        for n in range(len(ch)-1):
-          strdata += str(ch[n])+":"
-        strdata += str(ch[n+1])  
-
-      else:
-        count =1
-        strdata=""
-        ch = [0.0,0.0,0.0,-1.0,0.0]
-
-        for n in range(len(ch)-1):
-          strdata += str(ch[n])+":"
-        strdata += str(ch[n+1])    
-      strdata += "\n"
-      
-      seri2.write(bytes(strdata,encoding='utf-8'))
-      print("write data serial 2", strdata)
       
     if seri.serial_data_in_flag:
       seri.serial_data_in_flag = False
       print("serial1 received data", seri.serial_data_in)
-      deco = seri.serial_data_in.decode('utf-8')
-      #print(deco)
-      deco2 = deco.splitlines()
-      #print(deco2)
-      a = deco2[0].split(':')
-      #print(a)
-      b=[]
-      for n in range(len(a)):
-        b.append(float(a[n]))
-      print("send serial 1 to udp", b)
-      out_data = pack('>5f',b[0],b[1],b[2],b[3],b[4])
-      udp.write(out_data)
+     
+     
+
 
