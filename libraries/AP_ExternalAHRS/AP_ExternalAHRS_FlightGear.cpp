@@ -66,8 +66,8 @@ extern const AP_HAL::HAL &hal;
             VelU
 
 */
-static const uint8_t vn_pkt1_header[] { 0xFE, 0xBB, 0xAA};
-#define VN_PKT1_LENGTH 96 // includes header and CRC
+
+//#define VN_PKT1_LENGTH 100 // includes header and CRC
 
 /* struct PACKED VN_packet1 {
     float uncompMag[3];
@@ -85,7 +85,8 @@ static const uint8_t vn_pkt1_header[] { 0xFE, 0xBB, 0xAA};
     float posU;
     float velU;
 }; */
-
+static const uint8_t gn_pkt_header[] { 0xFE, 0xBB, 0xAA};
+#define GN_PKT1_LENGTH 96
 struct PACKED Generic_packet {
   double timestamp;  // in seconds
   double lat_lon[2];
@@ -126,7 +127,7 @@ struct PACKED Generic_packet {
             NumSats
             Fix
 */
-static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00 };
+/* static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00 };
 #define VN_PKT2_LENGTH 92 // includes header and CRC
 
 struct PACKED VN_packet2 {
@@ -139,10 +140,10 @@ struct PACKED VN_packet2 {
     float GPS1DOP[7];
     uint8_t numGPS2Sats;
     uint8_t GPS2Fix;
-};
+}; */
 
 // check packet size for 4 groups
-static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet2 length");
+//static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet2 length");
 
 /*
   assumes the following VN-300 config:
@@ -164,7 +165,7 @@ static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet
             0x0004:
                 Quaternion
 */
-static const uint8_t vn_100_pkt1_header[] { 0x14, 0x3E, 0x07, 0x04, 0x00 };
+/* static const uint8_t vn_100_pkt1_header[] { 0x14, 0x3E, 0x07, 0x04, 0x00 };
 #define VN_100_PKT1_LENGTH 104 // includes header and CRC
 
 struct PACKED VN_100_packet1 {
@@ -177,9 +178,9 @@ struct PACKED VN_100_packet1 {
     float accel[3];
     float gyro[3];
     float quaternion[4];
-};
+}; */
 
-static_assert(sizeof(VN_100_packet1)+2+2*2+2 == VN_100_PKT1_LENGTH, "incorrect VN_100_packet1 length");
+//static_assert(sizeof(VN_100_packet1)+2+2*2+2 == VN_100_PKT1_LENGTH, "incorrect VN_100_packet1 length");
 
 // constructor
 AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_frontend,
@@ -195,13 +196,13 @@ AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_fronten
     baudrate = sm.find_baudrate(AP_SerialManager::SerialProtocol_AHRS, 0);
     port_num = sm.find_portnum(AP_SerialManager::SerialProtocol_AHRS, 0);
 
-    bufsize = MAX(MAX(VN_PKT1_LENGTH, VN_PKT2_LENGTH), VN_100_PKT1_LENGTH);
+    //bufsize = 1024;
     pktbuf = new uint8_t[bufsize];
-    pktbuf2 = new uint8_t[bufsize];
-    last_pkt1 = new Generic_packet;
-    last_pkt2 = new VN_packet2;
 
-    if (!pktbuf || !last_pkt1 || !last_pkt2) {
+    last_pkt1 = new Generic_packet;
+    // last_pkt2 = new VN_packet2;
+
+    if (!pktbuf || !last_pkt1) {
         AP_BoardConfig::allocation_error("ExternalAHRS");
     }
 
@@ -215,68 +216,59 @@ AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_fronten
   check the UART for more data
   returns true if the function should be called again straight away
  */
-#define SYNC_BYTE 0xFA
-bool AP_ExternalAHRS_FlightGear::check_uart()
+//#define SYNC_BYTE 0xFA
+/* !!!!!!  little endian*/
+bool AP_ExternalAHRS_FlightGear::check_uart() 
 {
     if (!setup_complete) {
         return false;
     }
     WITH_SEMAPHORE(state.sem);
-    //uint8_t test[3]={'a','b','\n'};
-    //uart->write(test, sizeof(test));
 
     uint32_t n = uart->available();
-    if (n == 0) {
+ 
+    if (n < sizeof(gn_pkt_header)) {
         return false;
     }
 
-/*     ssize_t nread = uart->read(pktbuf, n);
-    uart->write(pktbuf, nread);
-    return true; */
-    bool match_header1 = false;
-
-    ssize_t nread =0;
-    if (pktoffset < bufsize) {
-        nread = uart->read(&pktbuf[pktoffset], MIN(n, unsigned(bufsize-pktoffset)));
-        if (nread <= 0) {
-            return false;
-        }
+    uart->printf("n %ld\n",n);
+    ssize_t nread = 0;
+    if (wp + n< bufsize) {
+          nread = uart->read(&pktbuf[wp], n);
+          wp += nread;
     } 
     else {
-        pktoffset = 0;
+        // overflow buffer reset
+        wp = 0;
         match_header1 = false;
-        uint8_t test[3]={'r','t','\n'};
-        uart->write(test, sizeof(test));
+        return false;
     }
+
+    uart->printf("wp %d\n",wp);
+
 
     if(!match_header1){
-           for( int i=0; i<nread-3;i++){
-                match_header1 = (0 == memcmp(&pktbuf[pktoffset+i], vn_pkt1_header, 3));
-                if(match_header1){
-                    if(i > 0){
-                        memmove(&pktbuf[0],&pktbuf[pktoffset+i],nread-i);
-                        pktoffset = nread-i;
-                        uint8_t test[3]={'m','c','\n'};
-                         uart->write(test, sizeof(test));
-                    }
-                    break;
-                }
+        for( int i = 0; i< wp - sizeof(gn_pkt_header) ;i++){
+            match_header1 = (0 == memcmp(&pktbuf[i], gn_pkt_header, sizeof(gn_pkt_header)));
+            if(match_header1){
+                int remain = wp - i;
+                if (i !=0) memmove(&pktbuf[0],&pktbuf[i],remain);
+                wp = remain;
+                
+                uart->printf("matching i= %d\n",i);
+                break;
             }
+            
         }
-    else{
-        pktoffset += nread;   
-        uint8_t test[3]={'r','d','\n'};
-        uart->write(test, sizeof(test));
     }
 
-    if (match_header1 && pktoffset >= VN_PKT1_LENGTH+3) {
-           // got pkt1
-           uint8_t test[3]={'o','k','\n'};
-         uart->write(test, sizeof(test));
-            process_packet1(&pktbuf[sizeof(vn_pkt1_header)]);
-            pktoffset = 0;
-            match_header1 = false;
+    if(wp >= GN_PKT1_LENGTH + sizeof(gn_pkt_header)){
+        process_packet1(&pktbuf[sizeof(gn_pkt_header)]);
+        int remain = wp - GN_PKT1_LENGTH - sizeof(gn_pkt_header);
+        if(remain != 0) memmove(&pktbuf[0],&pktbuf[wp],remain);
+        wp =  remain;
     }
+
     return true;
 }
 
@@ -450,7 +442,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
     last_pkt1_ms = AP_HAL::millis();
     *last_pkt1 = pkt1;
-
+    //uart->printf("%f",pkt1.lat_lon[0]);
     //const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
     //const bool use_uncomp = true;
 
@@ -471,6 +463,8 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
                                   int32_t(pkt1.alt * FEET_TO_METERS * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
         state.have_location = true;
+        uart->printf("%f\n",pkt1.timestamp);
+        
     }
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
@@ -724,7 +718,7 @@ bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failur
         hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear unhealthy");
         return false;
     }
-    if (type == TYPE::VN_300) {
+/*     if (type == TYPE::VN_300) {
         if (last_pkt2->GPS1Fix < 3) {
             hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear no GPS1 lock");
             return false;
@@ -733,7 +727,7 @@ bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failur
             hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear no GPS2 lock");
             return false;
         }
-    }
+    } */
     return true;
 }
 

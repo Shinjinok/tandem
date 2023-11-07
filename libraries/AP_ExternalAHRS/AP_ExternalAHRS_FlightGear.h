@@ -62,12 +62,11 @@ private:
     void wait_register_responce(const uint8_t register_num);
 
     uint8_t *pktbuf;
-    uint16_t pktoffset;
-    uint16_t bufsize;
+    uint16_t rp = 0;
+    uint16_t wp = 0;
+    uint16_t bufsize = 200;
+    bool match_header1 = false;
 
-    uint8_t *pktbuf2;
-    uint16_t pktoffset2;
-    uint16_t bufsize2;
 
     struct Generic_packet *last_pkt1;
     struct VN_packet2 *last_pkt2;

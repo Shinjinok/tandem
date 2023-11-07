@@ -14,7 +14,7 @@
 
     <input>
       <binary_mode>true</binary_mode>
-
+	
       <!-- ##### Flight Controls -->
       <chunk>
 	<name>aileron</name>

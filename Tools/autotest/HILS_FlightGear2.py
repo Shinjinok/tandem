@@ -33,7 +33,7 @@ import errno
 
 
 
-PORT = '/dev/ttyUSB0'
+PORT = '/dev/ttyUSB1'
 #virtual serial port
 #PORT = '/dev/pts/3' 
 PORT2= '/dev/pts/4'
@@ -54,6 +54,7 @@ class usbSerial(object):
 
   def listen(self):
     while True:
+      time.sleep(0.1)
       self.serial_data_in = self.seri.readline()
       if len(self.serial_data_in) > 0 :
           self.serial_data_in_flag = True
@@ -74,6 +75,7 @@ class udp_socket(object):
     self.destination_addr = (a[0], int(a[2]))
     self.udp_data_in = None
     self.udp_data_in_flag = False
+    self.udp_raw_data_in = None
 
     #self.ser = serial.Serial(PORT, baudrate=115200, timeout=1)
 
@@ -89,10 +91,12 @@ class udp_socket(object):
       
   def listen_clients(self):
     print("start thread\n")
+    time.sleep(0.1)
     while True:
       data_udp ,addr= self.port.recvfrom(1024)
+      
+      self.udp_data_in = unpack('>3d18f',data_udp)
       self.udp_raw_data_in = data_udp
-      self.udp_data_in = unpack('>dddffffffffffffffffff',data_udp)
       self.udp_data_in_flag = True
 
           
@@ -106,25 +110,21 @@ if __name__ == '__main__':
 
   count = 1
   head = pack('<3B',0xFE, 0xBB, 0xAA)
-
+  test = pack('<d',123.456)
  
   while True:
     
-    """     seri.write(bytes("test serial tx rx\n",encoding='ascii'))
-    print("write to serial 1") """
-    time.sleep(1)
+    #seri.write(bytes("test serial tx rx\n",encoding='ascii'))
+ 
+    #seri.write(bytes(test))
     if udp.udp_data_in_flag:
       udp.udp_data_in_flag = False
-      serial_out = [head, udp.udp_raw_data_in]
-      
-      print(head)
-      #seri.write(bytes(head))
-      print(len(udp.udp_raw_data_in))
-      seri.write(bytes(head)+bytes(udp.udp_raw_data_in))
-      seri.write(bytes(udp.udp_raw_data_in))
-      print(bytes(head)+bytes(udp.udp_raw_data_in))
-      print(bytes(udp.udp_raw_data_in))
-
+           
+      #print("head",head)
+      #print(len(udp.udp_raw_data_in))
+      seri.write(head)
+      seri.write(udp.udp_raw_data_in)
+     
       print("write to serial 1")
 
      # print("write serial1\n")
