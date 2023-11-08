@@ -62,8 +62,8 @@ private:
     void wait_register_responce(const uint8_t register_num);
 
     uint8_t *pktbuf;
-    uint16_t rp = 0;
-    uint16_t wp = 0;
+    int16_t rp = 0;
+    int16_t wp = 0;
     uint16_t bufsize = 200;
     bool match_header1 = false;
 

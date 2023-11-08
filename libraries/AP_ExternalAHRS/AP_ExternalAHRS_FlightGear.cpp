@@ -86,17 +86,17 @@ extern const AP_HAL::HAL &hal;
     float velU;
 }; */
 static const uint8_t gn_pkt_header[] { 0xFE, 0xBB, 0xAA};
-#define GN_PKT1_LENGTH 96
+
 struct PACKED Generic_packet {
   double timestamp;  // in seconds
   double lat_lon[2];
   float alt;
-  float ch[4];
-  float pilot_accel_swu_xyz[3];
-  float orientation_rpy_deg[3];
   float pqr_rad[3];
+  float pilot_accel_swu_xyz[3];
   float speed_ned_fps[3];
-  float rpm;
+  float rpy_rad[3];
+  //float rpm;
+  
   //float uvw_body[3];
 };
 
@@ -231,7 +231,7 @@ bool AP_ExternalAHRS_FlightGear::check_uart()
         return false;
     }
 
-    uart->printf("n %ld\n",n);
+    //uart->printf("n %ld\n",n);
     ssize_t nread = 0;
     if (wp + n< bufsize) {
           nread = uart->read(&pktbuf[wp], n);
@@ -244,29 +244,31 @@ bool AP_ExternalAHRS_FlightGear::check_uart()
         return false;
     }
 
-    uart->printf("wp %d\n",wp);
+    
 
 
-    if(!match_header1){
-        for( int i = 0; i< wp - sizeof(gn_pkt_header) ;i++){
+    if(!match_header1 && wp > 2){
+        for( int16_t i = 0; i< wp - sizeof(gn_pkt_header) +1;i++){
             match_header1 = (0 == memcmp(&pktbuf[i], gn_pkt_header, sizeof(gn_pkt_header)));
             if(match_header1){
-                int remain = wp - i;
-                if (i !=0) memmove(&pktbuf[0],&pktbuf[i],remain);
+                int16_t remain = wp - i;
+                if (i > 0) memmove(&pktbuf[0],&pktbuf[i],remain);
                 wp = remain;
                 
-                uart->printf("matching i= %d\n",i);
+                //uart->printf("matching i= %d wp = %d\n",i,wp);
                 break;
             }
             
         }
     }
 
-    if(wp >= GN_PKT1_LENGTH + sizeof(gn_pkt_header)){
+    if(wp >= sizeof(Generic_packet) + sizeof(gn_pkt_header)){
+        //uart->printf("wp %d\n",wp);
         process_packet1(&pktbuf[sizeof(gn_pkt_header)]);
-        int remain = wp - GN_PKT1_LENGTH - sizeof(gn_pkt_header);
+        int remain = wp - sizeof(Generic_packet) - sizeof(gn_pkt_header);
         if(remain != 0) memmove(&pktbuf[0],&pktbuf[wp],remain);
         wp =  remain;
+        match_header1 = false;
     }
 
     return true;
@@ -388,33 +390,7 @@ void AP_ExternalAHRS_FlightGear::update_thread()
     // Open port in the thread
     uart->begin(baudrate, 1024, 512);
 
-    // Reset and wait for module to reboot
-    // VN_100 takes 1.25 seconds
-    //nmea_printf(uart, "$VNRST");
-    //hal.scheduler->delay(3000);
-
-    // Stop NMEA Async Outputs (this UART only)
-    //nmea_printf(uart, "$VNWRG,6,0");
-
-    // Detect version
-    // Read Model Number Register, ID 1
-    //wait_register_responce(1);
-
-    // Setup for messages respective model types (on both UARTs)
-    //if (strncmp(model_name, "VN-100", 6) == 0) {
-        // VN-100
-    //    type = TYPE::VN_100;
     type = TYPE::FG;
-
-        // This assumes unit is still configured at its default rate of 800hz
-     //   nmea_printf(uart, "$VNWRG,75,3,%u,14,073E,0004", unsigned(800/get_rate()));
-
-    //} else {
-        // Default to Setup for VN-300 series
-        // This assumes unit is still configured at its default rate of 400hz
-    //    nmea_printf(uart, "$VNWRG,75,3,%u,34,072E,0106,0612", unsigned(400/get_rate()));
-    //    nmea_printf(uart, "$VNWRG,76,3,80,4E,0002,0010,20B8,0018");
-    //}
 
     setup_complete = true;
     while (true) {
@@ -438,62 +414,78 @@ const char* AP_ExternalAHRS_FlightGear::get_name() const
 void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 {
     const struct Generic_packet &pkt1 = *(struct Generic_packet *)b;
-    //const struct VN_packet2 &pkt2 = *last_pkt2;
-
+    
     last_pkt1_ms = AP_HAL::millis();
-    *last_pkt1 = pkt1;
-    //uart->printf("%f",pkt1.lat_lon[0]);
-    //const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
-    //const bool use_uncomp = true;
+    
+    AP_ExternalAHRS::gps_data_message_t gps;
+    // get ToW in milliseconds
+        gps.gps_week = (uint64_t) pkt1.timestamp/ AP_MSEC_PER_WEEK ;
+        gps.ms_tow = (uint64_t)pkt1.timestamp % (60*60*24*7*1000ULL);
+        gps.fix_type = 4;
+        gps.satellites_in_view = 16;
 
+        gps.horizontal_pos_accuracy = 0.01f;
+        gps.vertical_pos_accuracy = 0.01f;
+        gps.horizontal_vel_accuracy = 0.01f;
+
+        gps.hdop = 1.0f;
+        gps.vdop = 1.0f;
+        gps.latitude = pkt1.lat_lon[0] * 1.0e7;
+        gps.longitude = pkt1.lat_lon[1] * 1.0e7;
+        gps.msl_altitude = pkt1.alt * 1.0e2;
+
+        gps.ned_vel_north = pkt1.speed_ned_fps[0];
+        gps.ned_vel_east = pkt1.speed_ned_fps[1];
+        gps.ned_vel_down = pkt1.speed_ned_fps[2];
+
+        AP::gps().handle_external(gps,0); 
+    
     {
         WITH_SEMAPHORE(state.sem);
         
-        state.accel = Vector3f{pkt1.pilot_accel_swu_xyz[0]*FEET_TO_METERS, pkt1.pilot_accel_swu_xyz[1]*FEET_TO_METERS, pkt1.pilot_accel_swu_xyz[2]*FEET_TO_METERS};
+        state.accel = Vector3f{pkt1.pilot_accel_swu_xyz[0], pkt1.pilot_accel_swu_xyz[1], pkt1.pilot_accel_swu_xyz[2]};
         state.gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
         
-        //state.quat = Quaternion{pkt1.quaternion[3], pkt1.quaternion[0], pkt1.quaternion[1], pkt1.quaternion[2]};
-        //state.have_quaternion = true;
+        state.quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
+        state.have_quaternion = true;
 
-        state.velocity = Vector3f{pkt1.speed_ned_fps[0]*FEET_TO_METERS, pkt1.speed_ned_fps[1]*FEET_TO_METERS, pkt1.speed_ned_fps[2]*FEET_TO_METERS};
-        state.have_velocity = true;
-
-        state.location = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
+        if (gps.fix_type >= 3 && !state.have_origin) {
+            state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
                                   int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                  int32_t(pkt1.alt * FEET_TO_METERS * 1.0e2),
+                                  int32_t(pkt1.alt * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
-        state.have_location = true;
-        uart->printf("%f\n",pkt1.timestamp);
-        
+            state.have_origin = true;
+        }
     }
+        uart->printf("%f %f\n",pkt1.timestamp,pkt1.lat_lon[0]);
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    /* {
+/* #if AP_BARO_EXTERNALAHRS_ENABLED
+    {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
         baro.pressure_pa = pkt1.pressure*1e3;
         baro.temperature = pkt2.temp;
 
         AP::baro().handle_external(baro);
-    } */
+    } 
 #endif
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
-/*     {
+     {
         AP_ExternalAHRS::mag_data_message_t mag;
         mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
         mag.field *= 1000; // to mGauss
 
         AP::compass().handle_external(mag);
-    } */
-#endif
+    } 
+#endif */
 
     {
         AP_ExternalAHRS::ins_data_message_t ins;
 
         ins.accel = state.accel;
         ins.gyro = state.gyro;
-        //ins.temperature = pkt2.temp;
+        ins.temperature = 25.0f;
 
         AP::ins().handle_external(ins);
     }
@@ -689,9 +681,9 @@ bool AP_ExternalAHRS_FlightGear::healthy(void) const
         return (now - last_pkt1_ms < 40);
     } */
     if (type == TYPE::FG) {
-        return (now - last_pkt1_ms < 40);
+        return (now - last_pkt1_ms < 200);
     }
-    return (now - last_pkt1_ms < 40 && now - last_pkt2_ms < 500);
+    return (now - last_pkt1_ms < 200);
 }
 
 bool AP_ExternalAHRS_FlightGear::initialised(void) const
@@ -705,7 +697,7 @@ bool AP_ExternalAHRS_FlightGear::initialised(void) const
     if (type == TYPE::FG) {
         return last_pkt1_ms != 0;
     }
-    return last_pkt1_ms != 0 && last_pkt2_ms != 0;
+    return last_pkt1_ms != 0 ;
 }
 
 bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
