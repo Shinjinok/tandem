@@ -35,56 +35,14 @@
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Motors/AP_Motors.h>
 
 extern const AP_HAL::HAL &hal;
 
-/*
-  header for pre-configured 50Hz data
-  assumes the following config for VN-300:
-    $VNWRG,75,3,8,34,072E,0106,0612*0C
+AP_Motors *motors;
 
-    0x34: Groups 3,5,6
-    Group 3 (IMU):
-        0x072E:
-            UncompMag
-            UncompAccel
-            UncompGyro
-            Pres
-            Mag
-            Accel
-            AngularRate
-    Group 5 (Attitude):
-        0x0106:
-            YawPitchRoll
-            Quaternion
-            YprU
-    Group 6 (INS):
-        0x0612:
-            PosLLa
-            VelNed
-            PosU
-            VelU
 
-*/
-
-//#define VN_PKT1_LENGTH 100 // includes header and CRC
-
-/* struct PACKED VN_packet1 {
-    float uncompMag[3];
-    float uncompAccel[3];
-    float uncompAngRate[3];
-    float pressure;
-    float mag[3];
-    float accel[3];
-    float gyro[3];
-    float ypr[3];
-    float quaternion[4];
-    float yprU[3];
-    double positionLLA[3];
-    float velNED[3];
-    float posU;
-    float velU;
-}; */
 static const uint8_t gn_pkt_header[] { 0xFE, 0xBB, 0xAA};
 
 struct PACKED Generic_packet {
@@ -95,92 +53,10 @@ struct PACKED Generic_packet {
   float pilot_accel_swu_xyz[3];
   float speed_ned_fps[3];
   float rpy_rad[3];
-  //float rpm;
-  
-  //float uvw_body[3];
+  float pressure;
+  float rpm;
 };
 
-// check packet size for 4 groups
-//static_assert(sizeof(VN_packet1)+2+3*2+2 == VN_PKT1_LENGTH, "incorrect VN_packet1 length");
-
-/*
-  header for pre-configured 5Hz data
-  assumes the following VN-300 config:
-    $VNWRG,76,3,80,4E,0002,0010,20B8,0018*63
-
-    0x4E: Groups 2,3,4,7
-    Group 2 (Time):
-        0x0002:
-            TimeGps
-    Group 3 (IMU):
-        0x0010:
-            Temp
-    Group 4 (GPS1):
-        0x20B8:
-            NumSats
-            Fix
-            PosLLa
-            VelNed
-            DOP
-    Group 7 (GPS2):
-        0x0018:
-            NumSats
-            Fix
-*/
-/* static const uint8_t vn_pkt2_header[] { 0x4e, 0x02, 0x00, 0x10, 0x00, 0xb8, 0x20, 0x18, 0x00 };
-#define VN_PKT2_LENGTH 92 // includes header and CRC
-
-struct PACKED VN_packet2 {
-    uint64_t timeGPS;
-    float temp;
-    uint8_t numGPS1Sats;
-    uint8_t GPS1Fix;
-    double GPS1posLLA[3];
-    float GPS1velNED[3];
-    float GPS1DOP[7];
-    uint8_t numGPS2Sats;
-    uint8_t GPS2Fix;
-}; */
-
-// check packet size for 4 groups
-//static_assert(sizeof(VN_packet2)+2+4*2+2 == VN_PKT2_LENGTH, "incorrect VN_packet2 length");
-
-/*
-  assumes the following VN-300 config:
-    $VNWRG,75,3,80,14,073E,0004*66
-
-  Alternate first packet for VN-100
-    0x14: Groups 3, 5
-        Group 3 (IMU):
-            0x073E:
-                UncompMag
-                UncompAccel
-                UncompGyro
-                Temp
-                Pres
-                Mag
-                Accel
-                Gyro
-        Group 5 (Attitude):
-            0x0004:
-                Quaternion
-*/
-/* static const uint8_t vn_100_pkt1_header[] { 0x14, 0x3E, 0x07, 0x04, 0x00 };
-#define VN_100_PKT1_LENGTH 104 // includes header and CRC
-
-struct PACKED VN_100_packet1 {
-    float uncompMag[3];
-    float uncompAccel[3];
-    float uncompAngRate[3];
-    float temp;
-    float pressure;
-    float mag[3];
-    float accel[3];
-    float gyro[3];
-    float quaternion[4];
-}; */
-
-//static_assert(sizeof(VN_100_packet1)+2+2*2+2 == VN_100_PKT1_LENGTH, "incorrect VN_100_packet1 length");
 
 // constructor
 AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_frontend,
@@ -210,6 +86,8 @@ AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_fronten
         AP_HAL::panic("Failed to start ExternalAHRS update thread");
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised");
+
+    motors = AP_Motors::get_singleton();
 }
 
 /*
@@ -419,7 +297,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     
     AP_ExternalAHRS::gps_data_message_t gps;
     // get ToW in milliseconds
-        gps.gps_week = (uint64_t) pkt1.timestamp/ AP_MSEC_PER_WEEK ;
+        gps.gps_week = (uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK ;
         gps.ms_tow = (uint64_t)pkt1.timestamp % (60*60*24*7*1000ULL);
         gps.fix_type = 4;
         gps.satellites_in_view = 16;
@@ -436,7 +314,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
         gps.ned_vel_north = pkt1.speed_ned_fps[0];
         gps.ned_vel_east = pkt1.speed_ned_fps[1];
-        gps.ned_vel_down = pkt1.speed_ned_fps[2];
+        gps.ned_vel_down = pkt1.speed_ned_fps[2]; 
 
         AP::gps().handle_external(gps,0); 
     
@@ -448,6 +326,14 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         
         state.quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
         state.have_quaternion = true;
+        state.velocity = Vector3f{pkt1.speed_ned_fps[0], pkt1.speed_ned_fps[1], pkt1.speed_ned_fps[2]};
+        state.have_velocity = true;
+
+        state.location = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
+                                  int32_t(pkt1.lat_lon[1] * 1.0e7),
+                                  int32_t(pkt1.alt * 1.0e2),
+                                  Location::AltFrame::ABSOLUTE};
+        state.have_location = true;
 
         if (gps.fix_type >= 3 && !state.have_origin) {
             state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
@@ -457,19 +343,20 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
             state.have_origin = true;
         }
     }
-        uart->printf("%f %f\n",pkt1.timestamp,pkt1.lat_lon[0]);
+        uart->printf("%f %f %f %f\n",motors->get_roll(),motors->get_pitch(),motors->get_throttle_out(),motors->get_yaw());
 
-/* #if AP_BARO_EXTERNALAHRS_ENABLED
+
+ #if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
         baro.pressure_pa = pkt1.pressure*1e3;
-        baro.temperature = pkt2.temp;
-
+        baro.temperature = 25.0f;
+        //uart->printf("baro %f\n",pkt1.pressure);
         AP::baro().handle_external(baro);
     } 
 #endif
-
+/*
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
      {
         AP_ExternalAHRS::mag_data_message_t mag;

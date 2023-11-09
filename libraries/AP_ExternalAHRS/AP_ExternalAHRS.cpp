@@ -256,6 +256,5 @@ AP_ExternalAHRS &externalAHRS()
 }
 
 };
-
 #endif  // HAL_EXTERNAL_AHRS_ENABLED
 

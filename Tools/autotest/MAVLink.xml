@@ -151,13 +151,14 @@
 			<node>/orientation/model/heading-deg</node>
       </chunk>
 
-	  
-
-
-
+	  <chunk>
+			<name>pressure-inhg</name><!--[16]-->
+			<type>float</type>
+			<node>/environment/pressure-inhg</node>
+      </chunk>
 
 	  <chunk>
-			<name>rotor-rpm</name><!--[16]-->
+			<name>rotor-rpm</name><!--[17]-->
 			<type>float</type>
 			<node>/rotors/main/rpm</node>
       </chunk> 

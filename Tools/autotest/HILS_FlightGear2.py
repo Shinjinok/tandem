@@ -4,25 +4,13 @@
 #PARAMS:
 # param set AHRS_EKF_TYPE 11
 # param set EAHRS_TYPE 3
-# param set SERIAL1_PROTOCOL 36
-# param set SERIAL1_BAUD 480
+# param set SERIAL1_PROTOCOL 36  
+# param set SERIAL1_BAUD 480 480600
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
+# param set FS_OPTIONS 0  <--Failsafe disable
+# param set DISARM_DELAY 0
 
 
-"""
-struct PACKED Generic_packet {
-  double timestamp;  // in seconds
-  double lat_lon[2];
-  float alt;
-  float ch[4];
-  float pilot_accel_swu_xyz[3];
-  float orientation_rpy_deg[3];
-  float pqr_rad[3];
-  float speed_ned_fps[3];
-  float rpm;
-  //float uvw_body[3];
-};
-"""
 
 import socket
 from struct import pack, unpack,calcsize
@@ -64,7 +52,7 @@ def get_quaternion_from_euler(roll, pitch, yaw):
 class usbSerial(object):
   def __init__(self, port):
     try:
-      self.seri = serial.Serial(port, baudrate=460800, timeout=1)
+      self.seri = serial.Serial(port, baudrate=480600, timeout=1)
     except Exception as e:
       print("error open serial port: " + str(e))
       exit()
@@ -118,7 +106,7 @@ class udp_socket(object):
     while True:
       data_udp ,addr= self.port.recvfrom(1024)
       
-      self.udp_data_in = unpack('>3d14f',data_udp)
+      self.udp_data_in = unpack('>3d15f',data_udp)
       self.udp_raw_data_in = data_udp
       self.udp_data_in_flag = True
 
@@ -137,17 +125,20 @@ if __name__ == '__main__':
     if udp.udp_data_in_flag:
       udp.udp_data_in_flag = False
  
-      d = pack('<3B3d13f',0xFE, 0xBB, 0xAA,
+      d = pack('<3B3d15f',0xFE, 0xBB, 0xAA,
                udp.udp_data_in[0],
                udp.udp_data_in[1],udp.udp_data_in[2],#lat lon
                udp.udp_data_in[3],#alt
                udp.udp_data_in[4],udp.udp_data_in[5],udp.udp_data_in[6],# pqr
                udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
-               udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad) #roll pitch yaw
+               udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
+               udp.udp_data_in[16]*33.8637526, #pressure mbar
+               udp.udp_data_in[17]) #rpm
 
       seri.write(d)
       print("write to serial 1")
+      print(udp.udp_data_in[16]*33.8637526)
       time.sleep(0.1)
     if seri.serial_data_in_flag:
       seri.serial_data_in_flag = False
