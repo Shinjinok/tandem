@@ -29,26 +29,6 @@ PORT2= '/dev/pts/4'
 
 deg2rad = 0.0174533
 
-def get_quaternion_from_euler(roll, pitch, yaw):
-  """
-  Convert an Euler angle to a quaternion.
-   
-  Input
-    :param roll: The roll (rotation around x-axis) angle in radians.
-    :param pitch: The pitch (rotation around y-axis) angle in radians.
-    :param yaw: The yaw (rotation around z-axis) angle in radians.
- 
-  Output
-    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
-  """
-  qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
-  qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
-  qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
-  qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
- 
-  return [qx, qy, qz, qw]
-
-
 class usbSerial(object):
   def __init__(self, port):
     try:
@@ -60,15 +40,21 @@ class usbSerial(object):
     self.serial_data_in_flag  = False
     self.udp_raw_data_in =None
     self.lock = threading.Lock()
+    self.delta_read_time = 0
     t = threading.Thread(target=self.listen)
     t.start()
 
   def listen(self):
     while True:
-      time.sleep(0.1)
-      self.serial_data_in = self.seri.readline()
-      if len(self.serial_data_in) > 0 :
-          self.serial_data_in_flag = True
+      #time.sleep(0.1)
+      try:
+        self.serial_data_in = self.seri.readline()
+        self.serial_data_in_flag = True
+      except:
+        print("abnomal\n")
+        self.serial_data_in_flag = False
+
+          
 
 
   def write(self, data):
@@ -140,9 +126,24 @@ if __name__ == '__main__':
       print("write to serial 1")
       print(udp.udp_data_in[16]*33.8637526)
       time.sleep(0.1)
+      
     if seri.serial_data_in_flag:
       seri.serial_data_in_flag = False
-      print("serial1 received data", seri.serial_data_in)
+      clock = time.clock_gettime(0)
+      deltat = clock - seri.delta_read_time 
+      seri.delta_read_time = clock
+      print("serial1 received data", seri.serial_data_in , deltat)
+      
+      a = str(seri.serial_data_in).split(':')
+      print(a)
+      send_data = []
+      for i in range(8):
+        send_data.append((float(a[i+1] ) - 1500.0) / 500.0)
+      send_data[2] = (2000.0 - float(a[3] )) / 1000.0
+      #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
+      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+      print(send_data)
+      udp.write(send_pack)
      
      
 

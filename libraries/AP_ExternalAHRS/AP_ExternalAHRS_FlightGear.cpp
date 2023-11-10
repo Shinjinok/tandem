@@ -35,12 +35,11 @@
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <SRV_Channel/SRV_Channel.h>
-#include <AP_Motors/AP_Motors.h>
+
 
 extern const AP_HAL::HAL &hal;
 
-AP_Motors *motors;
+
 
 
 static const uint8_t gn_pkt_header[] { 0xFE, 0xBB, 0xAA};
@@ -88,6 +87,7 @@ AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_fronten
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised");
 
     motors = AP_Motors::get_singleton();
+    channels = SRV_Channels::get_singleton();
 }
 
 /*
@@ -308,13 +308,13 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
         gps.hdop = 1.0f;
         gps.vdop = 1.0f;
-        gps.latitude = pkt1.lat_lon[0] * 1.0e7;
+/*         gps.latitude = pkt1.lat_lon[0] * 1.0e7;
         gps.longitude = pkt1.lat_lon[1] * 1.0e7;
         gps.msl_altitude = pkt1.alt * 1.0e2;
 
         gps.ned_vel_north = pkt1.speed_ned_fps[0];
         gps.ned_vel_east = pkt1.speed_ned_fps[1];
-        gps.ned_vel_down = pkt1.speed_ned_fps[2]; 
+        gps.ned_vel_down = pkt1.speed_ned_fps[2];  */
 
         AP::gps().handle_external(gps,0); 
     
@@ -333,7 +333,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
                                   int32_t(pkt1.lat_lon[1] * 1.0e7),
                                   int32_t(pkt1.alt * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
-        state.have_location = true;
+        state.have_location = true; 
 
         if (gps.fix_type >= 3 && !state.have_origin) {
             state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
@@ -343,7 +343,11 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
             state.have_origin = true;
         }
     }
-        uart->printf("%f %f %f %f\n",motors->get_roll(),motors->get_pitch(),motors->get_throttle_out(),motors->get_yaw());
+        uint16_t values[8] {};
+        hal.rcout->read(values, 8);
+        uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+        //uart->write((const uint8_t *) &values[0],sizeof(values));
+        //uart->printf("\n");
 
 
  #if AP_BARO_EXTERNALAHRS_ENABLED

@@ -23,6 +23,8 @@
 #if AP_EXTERNAL_AHRS_FLIGHTGEAR_ENABLED
 
 #include "AP_ExternalAHRS_backend.h"
+#include <SRV_Channel/SRV_Channel.h>
+#include <AP_Motors/AP_Motors.h>
 
 class AP_ExternalAHRS_FlightGear : public AP_ExternalAHRS_backend {
 
@@ -49,6 +51,8 @@ public:
 
 private:
     AP_HAL::UARTDriver *uart;
+    AP_Motors *motors;
+    SRV_Channels *channels;
     int8_t port_num;
     bool setup_complete;
     uint32_t baudrate;
