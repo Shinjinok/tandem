@@ -1,4 +1,5 @@
 #HILS for run ./fg_ch47_view.sh
+# MAVProxy    mavproxy.py --master=/dev/ttyACM0 --console --map
 #virtual serial port  socat -d -d pty,raw,echo=0 pty,raw,echo=0
 #usage:
 #PARAMS:
@@ -9,9 +10,12 @@
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
 # param set FS_OPTIONS 0  <--Failsafe disable
 # param set DISARM_DELAY 0
+# RC_OPTION ignore rc receiver
 
-
-
+'''
+generate field tables from IGRF13. Note that this requires python3
+'''
+from pymavlink import mavextra
 import socket
 from struct import pack, unpack,calcsize
 import serial
@@ -121,7 +125,10 @@ if __name__ == '__main__':
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
                udp.udp_data_in[16]*33.8637526, #pressure mbar
                udp.udp_data_in[17]) #rpm
-
+      lat = udp.udp_data_in[1]
+      lon = udp.udp_data_in[2]
+      m = mavextra.expected_earth_field_lat_lon(lat, lon)
+      print("{%f, %f, {%.3f, %.3f, %.3f}}," % (lat, lon, m.x, m.y, m.z))
       seri.write(d)
       print("write to serial 1")
       print(udp.udp_data_in[16]*33.8637526)
@@ -140,8 +147,9 @@ if __name__ == '__main__':
       for i in range(8):
         send_data.append((float(a[i+1] ) - 1500.0) / 500.0)
       send_data[2] = (2000.0 - float(a[3] )) / 1000.0
+      #send_data[2] = 0.4
       #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
-      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,-send_data[3] ,send_data[2])
       print(send_data)
       udp.write(send_pack)
      

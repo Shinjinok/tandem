@@ -91,10 +91,10 @@ Max weight 50,000 lbs
 
         <control-input axis="controls/flight/rudder" control="CYCLICAIL"
            src0="-1.0" src1="1.0"
-           dst0="-0.04" dst1="0.04"/>
+           dst0="-0.06" dst1="0.06"/>
         <control-input axis="controls/flight/aileron" control="CYCLICAIL"
            src0="-1.0" src1="1.0"
-           dst0="-0.04" dst1="0.04"/>
+           dst0="-0.06" dst1="0.06"/>
         <control-input axis="controls/flight/elevator" control="COLLECTIVE"
            src0="-1.0" src1="1.0"
            dst0="0.02" dst1="-0.02"/>
@@ -108,7 +108,7 @@ Max weight 50,000 lbs
                src0="0.0" src1="1.0"
         dst0="0" dst1="-1.0"/>
     </rotor>
-
+    <!-- meter units  -->
     <rotor
     name="tail"
     x="-5.6"
@@ -127,7 +127,7 @@ Max weight 50,000 lbs
     maxcyclicele="100.0"
     mincyclicail="-100.0"
     maxcyclicail="100.0"
-    diameter="18.29"
+    diameter="18.29"  
     numblades="3"
     weightperblade="280"
     relbladecenter="0.53"
@@ -179,11 +179,11 @@ Max weight 50,000 lbs
         control="CYCLICAIL"
         invert="true"
         src0="-1.0" src1="1.0"
-        dst0="-0.04" dst1="0.04"/>
+        dst0="-0.06" dst1="0.06"/>
         <control-input axis="controls/flight/aileron"
         control="CYCLICAIL"
         src0="-1.0" src1="1.0"
-        dst0="-0.04" dst1="0.04"/>
+        dst0="-0.06" dst1="0.06"/>
         <control-input axis="controls/flight/elevator"
         control="COLLECTIVE"
         src0="-1.0" src1="1.0"

@@ -47,12 +47,12 @@ static const uint8_t gn_pkt_header[] { 0xFE, 0xBB, 0xAA};
 struct PACKED Generic_packet {
   double timestamp;  // in seconds
   double lat_lon[2];
-  float alt;
+  float alt_m;
   float pqr_rad[3];
-  float pilot_accel_swu_xyz[3];
-  float speed_ned_fps[3];
+  float pilot_accel_swu_xyz_mps[3];
+  float speed_ned_mps[3];
   float rpy_rad[3];
-  float pressure;
+  float pressure_mbar;
   float rpm;
 };
 
@@ -308,37 +308,40 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
         gps.hdop = 1.0f;
         gps.vdop = 1.0f;
-/*         gps.latitude = pkt1.lat_lon[0] * 1.0e7;
+        gps.latitude = pkt1.lat_lon[0] * 1.0e7;
         gps.longitude = pkt1.lat_lon[1] * 1.0e7;
-        gps.msl_altitude = pkt1.alt * 1.0e2;
+        gps.msl_altitude = pkt1.alt_m * 1.0e2;
 
-        gps.ned_vel_north = pkt1.speed_ned_fps[0];
-        gps.ned_vel_east = pkt1.speed_ned_fps[1];
-        gps.ned_vel_down = pkt1.speed_ned_fps[2];  */
+        gps.ned_vel_north = pkt1.speed_ned_mps[0];
+        gps.ned_vel_east = pkt1.speed_ned_mps[1];
+        gps.ned_vel_down = pkt1.speed_ned_mps[2];
 
-        AP::gps().handle_external(gps,0); 
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
     
     {
         WITH_SEMAPHORE(state.sem);
         
-        state.accel = Vector3f{pkt1.pilot_accel_swu_xyz[0], pkt1.pilot_accel_swu_xyz[1], pkt1.pilot_accel_swu_xyz[2]};
+        state.accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
         state.gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
         
         state.quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
         state.have_quaternion = true;
-        state.velocity = Vector3f{pkt1.speed_ned_fps[0], pkt1.speed_ned_fps[1], pkt1.speed_ned_fps[2]};
+        state.velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
         state.have_velocity = true;
 
         state.location = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
                                   int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                  int32_t(pkt1.alt * 1.0e2),
+                                  int32_t(pkt1.alt_m * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
         state.have_location = true; 
 
         if (gps.fix_type >= 3 && !state.have_origin) {
             state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
                                   int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                  int32_t(pkt1.alt * 1.0e2),
+                                  int32_t(pkt1.alt_m * 1.0e2),
                                   Location::AltFrame::ABSOLUTE};
             state.have_origin = true;
         }
@@ -354,7 +357,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
-        baro.pressure_pa = pkt1.pressure*1e3;
+        baro.pressure_pa = pkt1.pressure_mbar*1e3;
         baro.temperature = 25.0f;
         //uart->printf("baro %f\n",pkt1.pressure);
         AP::baro().handle_external(baro);
