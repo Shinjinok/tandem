@@ -39,12 +39,12 @@ AP_ExternalAHRS::AP_ExternalAHRS()
     _singleton = this;
     if (rate.get() < 50) {
         // min 50Hz
-        rate.set(50);
+        rate.set(10);
     }
 }
 
 #ifndef HAL_EXTERNAL_AHRS_DEFAULT
-#define HAL_EXTERNAL_AHRS_DEFAULT 0
+#define HAL_EXTERNAL_AHRS_DEFAULT 3
 #endif
 
 
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Description: Requested rate for AHRS device
     // @Units: Hz
     // @User: Standard
-    AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 50),
+    AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 10),
 
     // @Param: _OPTIONS
     // @DisplayName: External AHRS options
@@ -87,7 +87,7 @@ void AP_ExternalAHRS::init(void)
 {
     if (rate.get() < 50) {
         // min 50Hz
-        rate.set(50);
+        rate.set(10);
     }
 
     switch (DevType(devtype)) {

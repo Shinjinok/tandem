@@ -24,6 +24,7 @@ import time
 import sys
 import errno
 import numpy as np # Scientific computing library for Python
+from scipy.spatial.transform import Rotation as R
 
 
 PORT = '/dev/ttyUSB0'
@@ -32,6 +33,46 @@ PORT = '/dev/ttyUSB0'
 PORT2= '/dev/pts/4'
 
 deg2rad = 0.0174533
+
+# RPY/Euler angles to Rotation Vector
+def rotation_matrix(theta1, theta2, theta3):
+  """
+  input
+      theta1, theta2, theta3 = rotation angles in rotation order (degrees)
+      oreder = rotation order of x,y,z　e.g. XZY rotation -- 'xzy'
+  output
+      3x3 rotation matrix (numpy array)
+  """
+  c1 = np.cos(theta1 * np.pi / 180)
+  s1 = np.sin(theta1 * np.pi / 180)
+  c2 = np.cos(theta2 * np.pi / 180)
+  s2 = np.sin(theta2 * np.pi / 180)
+  c3 = np.cos(theta3 * np.pi / 180)
+  s3 = np.sin(theta3 * np.pi / 180)
+  matrix=np.array([[c2, -c3*s2, s2*s3],
+            [c1*s2, c1*c2*c3-s1*s3, -c3*s1-c1*c2*s3],
+            [s1*s2, c1*s3+c2*c3*s1, c1*c3-c2*s1*s3]])
+  return matrix
+
+def euler_to_rotMat(yaw, pitch, roll):
+    Rz_yaw = np.array([
+        [np.cos(yaw), -np.sin(yaw), 0],
+        [np.sin(yaw),  np.cos(yaw), 0],
+        [          0,            0, 1]])
+    Ry_pitch = np.array([
+        [ np.cos(pitch), 0, np.sin(pitch)],
+        [             0, 1,             0],
+        [-np.sin(pitch), 0, np.cos(pitch)]])
+    Rx_roll = np.array([
+        [1,            0,             0],
+        [0, np.cos(roll), -np.sin(roll)],
+        [0, np.sin(roll),  np.cos(roll)]])
+    # R = RzRyRx
+    rotMat = np.dot(Rz_yaw, np.dot(Ry_pitch, Rx_roll))
+    return rotMat
+
+
+
 
 class usbSerial(object):
   def __init__(self, port):
@@ -114,21 +155,32 @@ if __name__ == '__main__':
     
     if udp.udp_data_in_flag:
       udp.udp_data_in_flag = False
- 
-      d = pack('<3B3d15f',0xFE, 0xBB, 0xAA,
+      lat = udp.udp_data_in[1]
+      lon = udp.udp_data_in[2]
+      m = mavextra.expected_earth_field_lat_lon(lat, lon)
+      print("{%f, %f, {%.3f, %.3f, %.3f}}," % (lat, lon, m.x, m.y, m.z))
+      rot = rotation_matrix(-udp.udp_data_in[13], -udp.udp_data_in[14], -udp.udp_data_in[15])
+      v=[]
+      v.append(m.x)
+      v.append(m.y)
+      v.append(m.z)
+      rm = np.dot(rot, v)
+      
+      print("rm",rm,"---")
+      d = pack('<3B3d18f',0xFE, 0xBB, 0xAA,
                udp.udp_data_in[0],
-               udp.udp_data_in[1],udp.udp_data_in[2],#lat lon
+               udp.udp_data_in[1],#lat
+               udp.udp_data_in[2],#lat
                udp.udp_data_in[3],#alt
                udp.udp_data_in[4],udp.udp_data_in[5],udp.udp_data_in[6],# pqr
                udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
                udp.udp_data_in[16]*33.8637526, #pressure mbar
-               udp.udp_data_in[17]) #rpm
-      lat = udp.udp_data_in[1]
-      lon = udp.udp_data_in[2]
-      m = mavextra.expected_earth_field_lat_lon(lat, lon)
-      print("{%f, %f, {%.3f, %.3f, %.3f}}," % (lat, lon, m.x, m.y, m.z))
+               udp.udp_data_in[17],#rpm
+               rm[0],rm[1],rm[2]) 
+
+      
       seri.write(d)
       print("write to serial 1")
       print(udp.udp_data_in[16]*33.8637526)

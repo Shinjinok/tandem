@@ -54,6 +54,7 @@ struct PACKED Generic_packet {
   float rpy_rad[3];
   float pressure_mbar;
   float rpm;
+  float mag[3];
 };
 
 
@@ -86,8 +87,7 @@ AP_ExternalAHRS_FlightGear::AP_ExternalAHRS_FlightGear(AP_ExternalAHRS *_fronten
     }
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ExternalAHRS initialised");
 
-    motors = AP_Motors::get_singleton();
-    channels = SRV_Channels::get_singleton();
+ 
 }
 
 /*
@@ -353,7 +353,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         //uart->printf("\n");
 
 
- #if AP_BARO_EXTERNALAHRS_ENABLED
+#if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
@@ -363,7 +363,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         AP::baro().handle_external(baro);
     } 
 #endif
-/*
+
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
      {
         AP_ExternalAHRS::mag_data_message_t mag;
@@ -372,7 +372,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
         AP::compass().handle_external(mag);
     } 
-#endif */
+#endif 
 
     {
         AP_ExternalAHRS::ins_data_message_t ins;
