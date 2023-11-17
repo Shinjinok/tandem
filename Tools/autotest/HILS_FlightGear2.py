@@ -5,8 +5,8 @@
 #PARAMS:
 # param set AHRS_EKF_TYPE 11
 # param set EAHRS_TYPE 3
-# param set SERIAL1_PROTOCOL 36  
-# param set SERIAL1_BAUD 480 480600
+# param set SERIAL2_PROTOCOL 36  
+# param set SERIAL2_BAUD 480 480600
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
 # param set FS_OPTIONS 0  <--Failsafe disable
 # param set DISARM_DELAY 0
@@ -168,6 +168,8 @@ if __name__ == '__main__':
       rm = np.dot(rot, v)
       
       print("rm",rm,"---")
+      baro = float(udp.udp_data_in[16]*3386.37526)
+      
       d = pack('<3B3d18f',0xFE, 0xBB, 0xAA,
                udp.udp_data_in[0],
                udp.udp_data_in[1],#lat
@@ -177,15 +179,15 @@ if __name__ == '__main__':
                udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
-               udp.udp_data_in[16]*33.8637526, #pressure mbar
+               baro, #pressure mbar
                udp.udp_data_in[17],#rpm
                rm[0],rm[1],rm[2]) 
 
       
       seri.write(d)
       print("write to serial 1")
-      print(udp.udp_data_in[16]*33.8637526)
-      time.sleep(0.1)
+      print(udp.udp_data_in[6])
+      time.sleep(0.01)
       
     if seri.serial_data_in_flag:
       seri.serial_data_in_flag = False

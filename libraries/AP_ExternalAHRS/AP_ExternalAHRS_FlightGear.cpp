@@ -52,7 +52,7 @@ struct PACKED Generic_packet {
   float pilot_accel_swu_xyz_mps[3];
   float speed_ned_mps[3];
   float rpy_rad[3];
-  float pressure_mbar;
+  float pressure_pascal;
   float rpm;
   float mag[3];
 };
@@ -291,73 +291,90 @@ const char* AP_ExternalAHRS_FlightGear::get_name() const
  */
 void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 {
+
+    uint16_t values[8] {};
+    hal.rcout->read(values, 8);
+    uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+    //uart->write((const uint8_t *) &values[0],sizeof(values));
+    //uart->printf("\n");
+
+
     const struct Generic_packet &pkt1 = *(struct Generic_packet *)b;
     
     last_pkt1_ms = AP_HAL::millis();
-    
+
+    int32_t lat = pkt1.lat_lon[0] * 1.0e7;
+    int32_t lon = pkt1.lat_lon[1] * 1.0e7;
+    int32_t alt = pkt1.alt_m * 1.0e2;
+    {
+        WITH_SEMAPHORE(state.sem);
+        state.velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
+        state.have_velocity = true;
+
+        state.location = Location{lat, lon, alt, Location::AltFrame::ABSOLUTE};
+        state.have_location = true; 
+    }
+
+
     AP_ExternalAHRS::gps_data_message_t gps;
     // get ToW in milliseconds
-        gps.gps_week = (uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK ;
-        gps.ms_tow = (uint64_t)pkt1.timestamp % (60*60*24*7*1000ULL);
-        gps.fix_type = 4;
-        gps.satellites_in_view = 16;
+    gps.gps_week = (uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK ;
+    gps.ms_tow = (uint64_t)pkt1.timestamp % (60*60*24*7*1000ULL);
+    gps.fix_type = 5;
+    gps.satellites_in_view = 100;
 
-        gps.horizontal_pos_accuracy = 0.01f;
-        gps.vertical_pos_accuracy = 0.01f;
-        gps.horizontal_vel_accuracy = 0.01f;
+    gps.horizontal_pos_accuracy = 0.01f;
+    gps.vertical_pos_accuracy = 0.01f;
+    gps.horizontal_vel_accuracy = 0.01f;
 
-        gps.hdop = 1.0f;
-        gps.vdop = 1.0f;
-        gps.latitude = pkt1.lat_lon[0] * 1.0e7;
-        gps.longitude = pkt1.lat_lon[1] * 1.0e7;
-        gps.msl_altitude = pkt1.alt_m * 1.0e2;
+    gps.hdop = 1.0f;
+    gps.vdop = 1.0f;
+    gps.latitude = lat;
+    gps.longitude = lon;
+    gps.msl_altitude = alt;
 
-        gps.ned_vel_north = pkt1.speed_ned_mps[0];
-        gps.ned_vel_east = pkt1.speed_ned_mps[1];
-        gps.ned_vel_down = pkt1.speed_ned_mps[2];
+    gps.ned_vel_north = pkt1.speed_ned_mps[0];
+    gps.ned_vel_east = pkt1.speed_ned_mps[1];
+    gps.ned_vel_down = pkt1.speed_ned_mps[2];
+    
+    
+
+    if (gps.fix_type >= 3 && !state.have_origin) {
+        WITH_SEMAPHORE(state.sem);
+        state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
+                                int32_t(pkt1.lat_lon[1] * 1.0e7),
+                                int32_t(pkt1.alt_m * 1.0e2),
+                                Location::AltFrame::ABSOLUTE};
+        state.have_origin = true;
+    } 
 
     uint8_t instance;
     if (AP::gps().get_first_external_instance(instance)) {
         AP::gps().handle_external(gps, instance);
     }
     
+    Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
+    Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
+    Vector3f rpy = Vector3f(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
     {
         WITH_SEMAPHORE(state.sem);
         
-        state.accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
-        state.gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
+        state.accel = accel;
+        state.gyro = gyro;
         
-        state.quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
+        state.quat.from_euler(rpy.x,rpy.y,rpy.z);
         state.have_quaternion = true;
-        state.velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
-        state.have_velocity = true;
-
-        state.location = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
-                                  int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                  int32_t(pkt1.alt_m * 1.0e2),
-                                  Location::AltFrame::ABSOLUTE};
-        state.have_location = true; 
-
-        if (gps.fix_type >= 3 && !state.have_origin) {
-            state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
-                                  int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                  int32_t(pkt1.alt_m * 1.0e2),
-                                  Location::AltFrame::ABSOLUTE};
-            state.have_origin = true;
-        }
+        
+        
     }
-        uint16_t values[8] {};
-        hal.rcout->read(values, 8);
-        uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
-        //uart->write((const uint8_t *) &values[0],sizeof(values));
-        //uart->printf("\n");
+        
 
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
     {
         AP_ExternalAHRS::baro_data_message_t baro;
         baro.instance = 0;
-        baro.pressure_pa = pkt1.pressure_mbar*1e3;
+        baro.pressure_pa = pkt1.pressure_pascal;
         baro.temperature = 25.0f;
         //uart->printf("baro %f\n",pkt1.pressure);
         AP::baro().handle_external(baro);
@@ -377,8 +394,8 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     {
         AP_ExternalAHRS::ins_data_message_t ins;
 
-        ins.accel = state.accel;
-        ins.gyro = state.gyro;
+        ins.accel = accel;
+        ins.gyro = gyro;
         ins.temperature = 25.0f;
 
         AP::ins().handle_external(ins);
@@ -402,17 +419,15 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     // @Field: UR: uncertainty in roll
     // @Field: UP: uncertainty in pitch
     // @Field: UY: uncertainty in yaw
-
-/*     AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt,UXY,UV,UR,UP,UY",
-                       "sdddnnnDUmmnddd", "F000000GG000000",
-                       "QffffffLLffffff",
+/* 
+     AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
+                       "sdddnnnDUm", "F000000GG0",
+                       "QffffffLLf",
                        AP_HAL::micros64(),
-                       pkt1.ypr[2], pkt1.ypr[1], pkt1.ypr[0],
-                       pkt1.velNED[0], pkt1.velNED[1], pkt1.velNED[2],
-                       int32_t(pkt1.positionLLA[0]*1.0e7), int32_t(pkt1.positionLLA[1]*1.0e7),
-                       float(pkt1.positionLLA[2]),
-                       pkt1.posU, pkt1.velU,
-                       pkt1.yprU[2], pkt1.yprU[1], pkt1.yprU[0]); */
+                       rpy.x, rpy.y, rpy.z,
+                       pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[0],
+                       lat, lon,
+                       pkt1.alt_m); */
 }
 
 /*

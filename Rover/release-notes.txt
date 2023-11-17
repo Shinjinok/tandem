@@ -109,7 +109,7 @@ Changes from 4.4.0-beta1
     - Analog battery monitor2 current parameter default fixed
     - AutoTune fix for loading Yaw Rate D gains
     - BRD_SAFETYOPTION parameter documentation fix (ActiveForSafetyEnable and Disable were reversed)
-    - Compassmot fix to protect against bad gyro biases from GSF yaw
+    - Compassmot fix to protect against  biases from GSF yaw
     - ICE engine fix for starting after reaching a specified altitude
     - LED thread locking fix to avoid watchdog
     - Logging rotation on disarm disabled if Replay logging active (avoids gaps in logs)
