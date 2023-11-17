@@ -10,6 +10,7 @@
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
 # param set FS_OPTIONS 0  <--Failsafe disable
 # param set DISARM_DELAY 0
+# param set ARMING_CHECk 0
 # RC_OPTION ignore rc receiver
 
 '''
@@ -201,7 +202,7 @@ if __name__ == '__main__':
       send_data[2] = (2000.0 - float(a[3] )) / 1000.0
       #send_data[2] = 0.4
       #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
-      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,-send_data[3] ,send_data[2])
+      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
       print(send_data)
       udp.write(send_pack)
      
