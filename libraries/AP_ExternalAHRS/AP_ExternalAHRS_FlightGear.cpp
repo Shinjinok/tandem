@@ -306,6 +306,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     int32_t lat = pkt1.lat_lon[0] * 1.0e7;
     int32_t lon = pkt1.lat_lon[1] * 1.0e7;
     int32_t alt = pkt1.alt_m * 1.0e2;
+    
     {
         WITH_SEMAPHORE(state.sem);
         state.velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
@@ -319,7 +320,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     AP_ExternalAHRS::gps_data_message_t gps;
     // get ToW in milliseconds
     gps.gps_week = (uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK ;
-    gps.ms_tow = (uint64_t)pkt1.timestamp % (60*60*24*7*1000ULL);
+    gps.ms_tow = (uint64_t) (pkt1.timestamp * 1e3);//sec to ms
     gps.fix_type = 5;
     gps.satellites_in_view = 100;
 
@@ -337,7 +338,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     gps.ned_vel_east = pkt1.speed_ned_mps[1];
     gps.ned_vel_down = pkt1.speed_ned_mps[2];
     
-    
+    //uart->printf("%f %f %f\n",gps.ned_vel_north,gps.ned_vel_east,gps.ned_vel_down);
 
     if (gps.fix_type >= 3 && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
@@ -356,16 +357,14 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
     Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
     Vector3f rpy = Vector3f(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
+    //uart->printf("%f %f %f\n",accel.x,accel.y,accel.z);
+
     {
         WITH_SEMAPHORE(state.sem);
-        
         state.accel = accel;
         state.gyro = gyro;
-        
         state.quat.from_euler(rpy.x,rpy.y,rpy.z);
         state.have_quaternion = true;
-        
-        
     }
         
 
@@ -376,8 +375,10 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         baro.instance = 0;
         baro.pressure_pa = pkt1.pressure_pascal;
         baro.temperature = 25.0f;
-        //uart->printf("baro %f\n",pkt1.pressure);
+        //uart->printf("baro %f\n",pkt1.pressure_pascal);
+ 
         AP::baro().handle_external(baro);
+     
     } 
 #endif
 
@@ -385,7 +386,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
      {
         AP_ExternalAHRS::mag_data_message_t mag;
         mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
-        mag.field *= 1000; // to mGauss
+        //mag.field *= 1000; // to mGauss
 
         AP::compass().handle_external(mag);
     } 
@@ -396,8 +397,8 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
         ins.accel = accel;
         ins.gyro = gyro;
-        ins.temperature = 25.0f;
-
+        ins.temperature = -300.0f;
+       // uart->printf("%f %f %f\n",ins.accel.x,ins.accel.y,ins.accel.z);
         AP::ins().handle_external(ins);
     }
 

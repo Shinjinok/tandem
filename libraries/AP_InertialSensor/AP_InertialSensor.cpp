@@ -1113,7 +1113,9 @@ AP_InertialSensor::detect_backends(void)
 #if HAL_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
     const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
+    GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: serial_port %d",serial_port);
     if (serial_port >= 0) {
+        
         ADD_BACKEND(new AP_InertialSensor_ExternalAHRS(*this, serial_port));
     }
 #endif

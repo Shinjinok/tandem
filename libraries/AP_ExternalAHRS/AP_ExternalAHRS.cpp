@@ -39,7 +39,7 @@ AP_ExternalAHRS::AP_ExternalAHRS()
     _singleton = this;
     if (rate.get() < 50) {
         // min 50Hz
-        rate.set(10);
+        rate.set(30);
     }
 }
 
@@ -87,7 +87,7 @@ void AP_ExternalAHRS::init(void)
 {
     if (rate.get() < 50) {
         // min 50Hz
-        rate.set(10);
+        rate.set(20);
     }
 
     switch (DevType(devtype)) {
@@ -107,6 +107,7 @@ void AP_ExternalAHRS::init(void)
     #if AP_EXTERNAL_AHRS_FLIGHTGEAR_ENABLED
     case DevType::FlightGear:
         backend = new AP_ExternalAHRS_FlightGear(this, state);
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_ExternalAHRS_FlightGear ExternalAHRS type %u", unsigned(devtype));
         return;
 #endif
     }
