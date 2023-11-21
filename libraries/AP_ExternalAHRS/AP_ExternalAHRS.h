@@ -34,6 +34,7 @@ class AP_ExternalAHRS {
 public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_FlightGear;
 
     AP_ExternalAHRS();
 

@@ -39,13 +39,7 @@ deg2rad = 0.0174533
 
 # RPY/Euler angles to Rotation Vector
 def rotation_matrix(roll_deg, pitch_deg, yaw_deg):
-  """
-  input
-      theta1, theta2, theta3 = rotation angles in rotation order (degrees)
-      oreder = rotation order of x,y,z　e.g. XZY rotation -- 'xzy'
-  output
-      3x3 rotation matrix (numpy array)
-  """
+
   cr = np.cos(roll_deg * np.pi / 180)
   sr = np.sin(roll_deg * np.pi / 180)
   cp = np.cos(pitch_deg * np.pi / 180)
@@ -173,7 +167,7 @@ if __name__ == '__main__':
                udp.udp_data_in[2],#lat
                udp.udp_data_in[3],#alt
                udp.udp_data_in[4],udp.udp_data_in[5],udp.udp_data_in[6],# pqr
-               -udp.udp_data_in[7]*0.3048,-udp.udp_data_in[8]*0.3048,-udp.udp_data_in[9]*0.3048, #acc x y z
+               udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
                baro, #pressure pascal 

@@ -281,7 +281,7 @@ void AP_ExternalAHRS_FlightGear::update_thread()
 const char* AP_ExternalAHRS_FlightGear::get_name() const
 {
     if (setup_complete) {
-        return model_name;
+        return "FlightGear";
     }
     return nullptr;
 }
@@ -420,7 +420,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     // @Field: UR: uncertainty in roll
     // @Field: UP: uncertainty in pitch
     // @Field: UY: uncertainty in yaw
-/* 
+ 
      AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
                        "sdddnnnDUm", "F000000GG0",
                        "QffffffLLf",
@@ -428,149 +428,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
                        rpy.x, rpy.y, rpy.z,
                        pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[0],
                        lat, lon,
-                       pkt1.alt_m); */
-}
-
-/*
-  process packet type 2
- */
-void AP_ExternalAHRS_FlightGear::process_packet2(const uint8_t *b)
-{
-    /* const struct VN_packet2 &pkt2 = *(struct VN_packet2 *)b;
-    const struct Generic_packet &pkt1 = *last_pkt1;
-
-    last_pkt2_ms = AP_HAL::millis();
-    *last_pkt2 = pkt2;
-
-    AP_ExternalAHRS::gps_data_message_t gps;
-
-    // get ToW in milliseconds
-    gps.gps_week = pkt2.timeGPS / (AP_MSEC_PER_WEEK * 1000000ULL);
-    gps.ms_tow = (pkt2.timeGPS / 1000000ULL) % (60*60*24*7*1000ULL);
-    gps.fix_type = pkt2.GPS1Fix;
-    gps.satellites_in_view = pkt2.numGPS1Sats;
-
-    gps.horizontal_pos_accuracy = pkt1.posU;
-    gps.vertical_pos_accuracy = pkt1.posU;
-    gps.horizontal_vel_accuracy = pkt1.velU;
-
-    gps.hdop = pkt2.GPS1DOP[4];
-    gps.vdop = pkt2.GPS1DOP[3];
-
-    gps.latitude = pkt2.GPS1posLLA[0] * 1.0e7;
-    gps.longitude = pkt2.GPS1posLLA[1] * 1.0e7;
-    gps.msl_altitude = pkt2.GPS1posLLA[2] * 1.0e2;
-
-    gps.ned_vel_north = pkt2.GPS1velNED[0];
-    gps.ned_vel_east = pkt2.GPS1velNED[1];
-    gps.ned_vel_down = pkt2.GPS1velNED[2];
-
-    if (gps.fix_type >= 3 && !state.have_origin) {
-        WITH_SEMAPHORE(state.sem);
-        state.origin = Location{int32_t(pkt2.GPS1posLLA[0] * 1.0e7),
-                                int32_t(pkt2.GPS1posLLA[1] * 1.0e7),
-                                int32_t(pkt2.GPS1posLLA[2] * 1.0e2),
-                                Location::AltFrame::ABSOLUTE};
-        state.have_origin = true;
-    }
-    uint8_t instance;
-    if (AP::gps().get_first_external_instance(instance)) {
-        AP::gps().handle_external(gps, instance);
-    } */
-}
-
-/*
-  process VN-100 packet type 1
- */
-void AP_ExternalAHRS_FlightGear::process_packet_VN_100(const uint8_t *b)
-{
-   /*  const struct VN_100_packet1 &pkt = *(struct VN_100_packet1 *)b;
-
-    last_pkt1_ms = AP_HAL::millis();
-
-    //const bool use_uncomp = option_is_set(AP_ExternalAHRS::OPTIONS::VN_UNCOMP_IMU);
-    const bool use_uncomp = true;
-
-    {
-        WITH_SEMAPHORE(state.sem);
-        if (use_uncomp) {
-            state.accel = Vector3f{pkt.uncompAccel[0], pkt.uncompAccel[1], pkt.uncompAccel[2]};
-            state.gyro = Vector3f{pkt.uncompAngRate[0], pkt.uncompAngRate[1], pkt.uncompAngRate[2]};
-        } else {
-            state.accel = Vector3f{pkt.accel[0], pkt.accel[1], pkt.accel[2]};
-            state.gyro = Vector3f{pkt.gyro[0], pkt.gyro[1], pkt.gyro[2]};
-        }
-
-        state.quat = Quaternion{pkt.quaternion[3], pkt.quaternion[0], pkt.quaternion[1], pkt.quaternion[2]};
-        state.have_quaternion = true;
-    }
-
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    {
-        AP_ExternalAHRS::baro_data_message_t baro;
-        baro.instance = 0;
-        baro.pressure_pa = pkt.pressure*1e3;
-        baro.temperature = pkt.temp;
-
-        AP::baro().handle_external(baro);
-    }
-#endif
-
-#if AP_COMPASS_EXTERNALAHRS_ENABLED
-    {
-        AP_ExternalAHRS::mag_data_message_t mag;
-        if (use_uncomp) {
-            mag.field = Vector3f{pkt.uncompMag[0], pkt.uncompMag[1], pkt.uncompMag[2]};
-        } else {
-            mag.field = Vector3f{pkt.mag[0], pkt.mag[1], pkt.mag[2]};
-        }
-        mag.field *= 1000; // to mGauss
-
-        AP::compass().handle_external(mag);
-    }
-#endif
-
-    {
-        AP_ExternalAHRS::ins_data_message_t ins;
-
-        ins.accel = state.accel;
-        ins.gyro = state.gyro;
-        ins.temperature = pkt.temp;
-
-        AP::ins().handle_external(ins);
-    }
-
-    // @LoggerMessage: EAH3
-    // @Description: External AHRS data
-    // @Field: TimeUS: Time since system startup
-    // @Field: Temp: Temprature
-    // @Field: Pres: Pressure
-    // @Field: MX: Magnetic feild X-axis
-    // @Field: MY: Magnetic feild Y-axis
-    // @Field: MZ: Magnetic feild Z-axis
-    // @Field: AX: Acceleration X-axis
-    // @Field: AY: Acceleration Y-axis
-    // @Field: AZ: Acceleration Z-axis
-    // @Field: GX: Rotation rate X-axis
-    // @Field: GY: Rotation rate Y-axis
-    // @Field: GZ: Rotation rate Z-axis
-    // @Field: Q1: Attitude quaternion 1
-    // @Field: Q2: Attitude quaternion 2
-    // @Field: Q3: Attitude quaternion 3
-    // @Field: Q4: Attitude quaternion 4
-
-    AP::logger().WriteStreaming("EAH3", "TimeUS,Temp,Pres,MX,MY,MZ,AX,AY,AZ,GX,GY,GZ,Q1,Q2,Q3,Q4",
-                       "sdPGGGoooEEE----", "F000000000000000",
-                       "Qfffffffffffffff",
-                       AP_HAL::micros64(),
-                       pkt.temp, pkt.pressure*1e3,
-                       use_uncomp ? pkt.uncompMag[0] : pkt.mag[0],
-                       use_uncomp ? pkt.uncompMag[1] : pkt.mag[1], 
-                       use_uncomp ? pkt.uncompMag[2] : pkt.mag[2],
-                       state.accel[0], state.accel[1], state.accel[2],
-                       state.gyro[0], state.gyro[1], state.gyro[2],
-                       state.quat[0], state.quat[1], state.quat[2], state.quat[3]);
- */
+                       pkt1.alt_m);
 }
 
 
@@ -587,12 +445,7 @@ int8_t AP_ExternalAHRS_FlightGear::get_port(void) const
 bool AP_ExternalAHRS_FlightGear::healthy(void) const
 {
     const uint32_t now = AP_HAL::millis();
-   /*  if (type == TYPE::VN_100) {
-        return (now - last_pkt1_ms < 40);
-    } */
-    if (type == TYPE::FG) {
-        return (now - last_pkt1_ms < 200);
-    }
+   
     return (now - last_pkt1_ms < 200);
 }
 
@@ -601,12 +454,7 @@ bool AP_ExternalAHRS_FlightGear::initialised(void) const
     if (!setup_complete) {
         return false;
     }
-/*     if (type == TYPE::VN_100) {
-        return last_pkt1_ms != 0;
-    } */
-    if (type == TYPE::FG) {
-        return last_pkt1_ms != 0;
-    }
+
     return last_pkt1_ms != 0 ;
 }
 
@@ -620,16 +468,7 @@ bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failur
         hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear unhealthy");
         return false;
     }
-/*     if (type == TYPE::VN_300) {
-        if (last_pkt2->GPS1Fix < 3) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear no GPS1 lock");
-            return false;
-        }
-        if (last_pkt2->GPS2Fix < 3) {
-            hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear no GPS2 lock");
-            return false;
-        }
-    } */
+
     return true;
 }
 
@@ -640,27 +479,21 @@ bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failur
 void AP_ExternalAHRS_FlightGear::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
-    if (type == TYPE::FG) {
-        if (last_pkt1) {
-            status.flags.initalized = 1;
-        }
-        if (healthy()) {
-            status.flags.attitude = 1;
-            status.flags.vert_vel = 1;
-            status.flags.vert_pos = 1;
-            status.flags.horiz_vel = 1;
-            status.flags.horiz_pos_rel = 1;
-            status.flags.horiz_pos_abs = 1;
-            status.flags.pred_horiz_pos_rel = 1;
-            status.flags.pred_horiz_pos_abs = 1;
-            status.flags.using_gps = 1;
-            
-        }
-    } else {
-        status.flags.initalized = initialised();
-        if (healthy()) {
-            status.flags.attitude = true;
-        }
+   
+    if (last_pkt1 !=0 ) {
+        status.flags.initalized = 1;
+    }
+    if (healthy() && last_pkt1 !=0 ) {
+        status.flags.attitude = 1;
+        status.flags.vert_vel = 1;
+        status.flags.vert_pos = 1;
+        status.flags.horiz_vel = 1;
+        status.flags.horiz_pos_rel = 1;
+        status.flags.horiz_pos_abs = 1;
+        status.flags.pred_horiz_pos_rel = 1;
+        status.flags.pred_horiz_pos_abs = 1;
+        status.flags.using_gps = 1;
+        
     }
 }
 
@@ -709,15 +542,15 @@ void AP_ExternalAHRS_FlightGear::send_status_report(GCS_MAVLINK &link) const
     }
 
     // send message
- /*   const struct VN_packet1 &pkt1 = *(struct VN_packet1 *)last_pkt1;
-    const float vel_gate = 5;
-    const float pos_gate = 5;
-    const float hgt_gate = 5;
-    const float mag_var = 0;
-     mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       pkt1.velU/vel_gate, pkt1.posU/pos_gate, pkt1.posU/hgt_gate,
+    const float vel_gate = 20; // represents hz value data is posted at
+    const float pos_gate = 20; // represents hz value data is posted at
+    const float hgt_gate = 20; // represents hz value data is posted at
+    const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
+    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
+                                       0.01/vel_gate, 
+                                       0.01/pos_gate, 
+                                       0.01/hgt_gate,
                                        mag_var, 0, 0);
-                                       */
 } 
 
 #endif  // AP_EXTERNAL_AHRS_FLIGHTGEAR_ENABLED
