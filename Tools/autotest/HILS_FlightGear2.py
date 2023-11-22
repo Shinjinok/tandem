@@ -167,7 +167,7 @@ if __name__ == '__main__':
                udp.udp_data_in[2],#lat
                udp.udp_data_in[3],#alt
                udp.udp_data_in[4],udp.udp_data_in[5],udp.udp_data_in[6],# pqr
-               udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
+               -udp.udp_data_in[7]*0.3048,-udp.udp_data_in[8]*0.3048,-udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
                baro, #pressure pascal 
@@ -190,12 +190,14 @@ if __name__ == '__main__':
       a = str(seri.serial_data_in).split(':')
       print(a)
       send_data = []
-      for i in range(8):
-        send_data.append((float(a[i+1] ) - 1500.0) / 500.0)
-      send_data[2] = (2000.0 - float(a[3] )) / 1000.0
+      send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
+      send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
+      send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
+      send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
+
       #send_data[2] = 0.4
       #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
-      send_pack= pack('>5f',send_data[0],-send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+      send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
       #print(send_data)
       udp.write(send_pack)
      

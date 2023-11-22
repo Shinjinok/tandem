@@ -37,9 +37,9 @@ AP_ExternalAHRS::AP_ExternalAHRS()
 {
     AP_Param::setup_object_defaults(this, var_info);
     _singleton = this;
-    if (rate.get() < 50) {
-        // min 50Hz
-        rate.set(30);
+    if (rate.get() < 20) {
+        // min 20Hz
+        rate.set(20);
     }
 }
 
@@ -63,7 +63,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Description: Requested rate for AHRS device
     // @Units: Hz
     // @User: Standard
-    AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 10),
+    AP_GROUPINFO("_RATE", 2, AP_ExternalAHRS, rate, 20),
 
     // @Param: _OPTIONS
     // @DisplayName: External AHRS options
@@ -85,8 +85,8 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
 void AP_ExternalAHRS::init(void)
 {
-    if (rate.get() < 50) {
-        // min 50Hz
+    if (rate.get() < 20) {
+        // min 20Hz
         rate.set(20);
     }
 
@@ -107,7 +107,7 @@ void AP_ExternalAHRS::init(void)
     #if AP_EXTERNAL_AHRS_FLIGHTGEAR_ENABLED
     case DevType::FlightGear:
         backend = new AP_ExternalAHRS_FlightGear(this, state);
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_ExternalAHRS_FlightGear ExternalAHRS type %u", unsigned(devtype));
+        
         return;
 #endif
     }
