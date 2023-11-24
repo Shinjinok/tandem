@@ -126,7 +126,7 @@ bool AP_ExternalAHRS_FlightGear::check_uart()
 
 
     if(!match_header1 && wp > 2){
-        for( int16_t i = 0; i< wp - sizeof(gn_pkt_header) +1;i++){
+        for( uint64_t i = 0; i< wp - sizeof(gn_pkt_header) +1;i++){
             match_header1 = (0 == memcmp(&pktbuf[i], gn_pkt_header, sizeof(gn_pkt_header)));
             if(match_header1){
                 int16_t remain = wp - i;
@@ -350,11 +350,11 @@ bool AP_ExternalAHRS_FlightGear::initialised(void) const
 bool AP_ExternalAHRS_FlightGear::pre_arm_check(char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!setup_complete) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear setup failed");
+        hal.util->snprintf(failure_msg, failure_msg_len, "AP_ExternalAHRS_FlightGear setup failed");
         return false;
     }
     if (!healthy()) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "FlightGear unhealthy");
+        hal.util->snprintf(failure_msg, failure_msg_len, "AP_ExternalAHRS_FlightGear unhealthy");
         return false;
     }
 

@@ -13,41 +13,42 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connection for ardupilot version of FlightGear
+  simulator connection for ardupilot version of FlightGear2
 */
 
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#ifndef HAL_SIM_FLIHGTGEAR_ENABLED
-#define HAL_SIM_FLIHGTGEAR_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#ifndef HAL_SIM_FLIHGTGEAR2_ENABLED
+#define HAL_SIM_FLIHGTGEAR2_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
-#if HAL_SIM_FLIHGTGEAR_ENABLED
+#if HAL_SIM_FLIHGTGEAR2_ENABLED
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL/utility/Socket.h>
 
-#define NUM_ARRAY_DATA 18
-
-
+#define NUM_64_DATA 3
+#define NUM_32_DATA 15
+#define RCV_SIZE 3*8+15*4
+//caution !! : struct size must be multiples of 8bytes
 typedef struct generic_packet {
   double timestamp;  // in seconds
   double lat_lon[2];
   float alt;
-  float ch[4];
-  float pilot_accel_swu_xyz[3];
-  float orientation_rpy_deg[3];
   float pqr_rad[3];
+  float pilot_accel_swu_xyz[3];
   float speed_ned_fps[3];
+  float orientation_rpy_deg[3];
+  float pressure_inhg;
   float rpm;
-  //float uvw_body[3];
+  float dummy;
 }Generic_packet;
 
 typedef struct d_packet{
-  uint64_t data64[3];
-  uint32_t data32[18];
+  uint64_t data64[NUM_64_DATA];
+  uint32_t data32[NUM_32_DATA+1];
 }D_packet;
 
 typedef union u_packet{
@@ -78,26 +79,26 @@ typedef struct fdm_data{
 namespace SITL {
 
   /*
-    FlightGear simulator
+    FlightGear2 simulator
   */
-  class FlightGear : public Aircraft {
+  class FlightGear2 : public Aircraft {
   public:
-      FlightGear(const char *frame_str);
+      FlightGear2(const char *frame_str);
 
       /* update model by one time step */
       void update(const struct sitl_input &input) override;
 
       /* static object creator */
       static Aircraft *create(const char *frame_str) {
-          return new FlightGear(frame_str);
+          return new FlightGear2(frame_str);
       }
 
-      /*  Create and set in/out socket for FlightGear simulator */
+      /*  Create and set in/out socket for FlightGear2 simulator */
       void set_interface_ports(const char* address, const int port_in, const int port_out) override;
 
   private:
       /*
-        packet sent to FlightGear
+        packet sent to FlightGear2
       */
       struct servo_packet {
         // size matches sitl_input upstream
@@ -111,9 +112,9 @@ namespace SITL {
       double last_timestamp;
 
       SocketAPM socket_sitl;
-      const char *_flightgear_address = "127.0.0.1";
-      int _flightgear_port = 9002;
-      static const uint64_t FLIGHTGEAR_TIMEOUT_US = 5000000;
+      const char *_FlightGear2_address = "127.0.0.1";
+      int _FlightGear2_port = 9002;
+      static const uint64_t FlightGear2_TIMEOUT_US = 5000000;
 
       float ch[4]={0.0,0.0,0.0,0.0};
       int count = 0;
@@ -122,4 +123,4 @@ namespace SITL {
 }  // namespace SITL
 
 
-#endif  // HAL_SIM_FLIHGTGEAR_ENABLED
+#endif  // HAL_SIM_FLIHGTGEAR2_ENABLED

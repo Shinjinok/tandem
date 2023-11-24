@@ -13,33 +13,33 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /*
-  simulator connector for ardupilot version of FlightGear
+  simulator connector for ardupilot version of FlightGear2
 */
 
-#include "SIM_FlightGear.h"
+#include "SIM_FlightGear2.h"
 
-#if HAL_SIM_FLIHGTGEAR_ENABLED
+#if HAL_SIM_FLIHGTGEAR2_ENABLED
 
 #include <stdio.h>
 #include <errno.h>
 
 namespace SITL {
 
-FlightGear::FlightGear(const char *frame_str) :
+FlightGear2::FlightGear2(const char *frame_str) :
     Aircraft(frame_str),
     last_timestamp(0),
     socket_sitl{true}
 {
-    fprintf(stdout, "Starting SITL FlightGear\n");
+    fprintf(stdout, "Starting SITL FlightGear2\n");
 }
 
 /*
   Create and set in/out socket
 */
-void FlightGear::set_interface_ports(const char* address, const int port_in, const int port_out)
+void FlightGear2::set_interface_ports(const char* address, const int port_in, const int port_out)
 {
     // try to bind to a specific port so that if we restart ArduPilot
-    // FlightGear keeps sending us packets. Not strictly necessary but
+    // FlightGear2 keeps sending us packets. Not strictly necessary but
     // useful for debugging
     if (!socket_sitl.bind("0.0.0.0", port_in)) {
         fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
@@ -50,15 +50,15 @@ void FlightGear::set_interface_ports(const char* address, const int port_in, con
     socket_sitl.reuseaddress();
     socket_sitl.set_blocking(false);
 
-    _flightgear_address = address;
-    _flightgear_port = port_out;
-    printf("Setting FlightGear interface to %s:%d \n", _flightgear_address, _flightgear_port);
+    _FlightGear2_address = address;
+    _FlightGear2_port = port_out;
+    printf("Setting FlightGear2 interface to %s:%d \n", _FlightGear2_address, _FlightGear2_port);
 }
 
 /*
   decode and send servos
 */
-void FlightGear::send_servos(const struct sitl_input &input)
+void FlightGear2::send_servos(const struct sitl_input &input)
 {
    udp_in_packet pkt;
 
@@ -82,14 +82,14 @@ void FlightGear::send_servos(const struct sitl_input &input)
     data[2] = __bswap_32(pkt.data[2]);
     data[3] = __bswap_32(pkt.data[3]);
     data[4] = __bswap_32(pkt.data[4]);
-    socket_sitl.sendto(&data, sizeof(data), _flightgear_address, _flightgear_port);
+    socket_sitl.sendto(&data, sizeof(data), _FlightGear2_address, _FlightGear2_port);
 }
 
 /*
   receive an update from the FDM
   This is a blocking function
  */
-void FlightGear::recv_fdm(const struct sitl_input &input)
+void FlightGear2::recv_fdm(const struct sitl_input &input)
 {
     U_packet pkt;
     D_packet dp;
@@ -98,23 +98,22 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
       reply. This allows us to cope with some packet loss to the FDM
      */
     uint32_t now = AP_HAL::millis();
-    uint32_t taken_ms = now - last_one_hz_ms;
+   // uint32_t taken_ms = now - last_one_hz_ms;
     last_one_hz_ms = now;
-    while (socket_sitl.recv(&dp, sizeof(dp), 1) != sizeof(dp)) {
-        
+    while (socket_sitl.recv(&dp, RCV_SIZE, 1) != RCV_SIZE) {
         //send_servos(input);
-        // Reset the timestamp after a long disconnection, also catch FlightGear reset
-        if (get_wall_time_us() > last_wall_time_us + FLIGHTGEAR_TIMEOUT_US) {
+        // Reset the timestamp after a long disconnection, also catch FlightGear2 reset
+        if (get_wall_time_us() > last_wall_time_us + FlightGear2_TIMEOUT_US) {
             last_timestamp = 0;
         }
     }
     
 
-    for (long unsigned int i=0; i < 3; i++){
+    for (long unsigned int i=0; i < NUM_64_DATA; i++){
         pkt.dp.data64[i] = __bswap_64(dp.data64[i]);
     }
 
-    for (long unsigned int i=0; i < 18; i++){
+    for (long unsigned int i=0; i < NUM_32_DATA; i++){
         pkt.dp.data32[i] = __bswap_32(dp.data32[i]);
     }
 
@@ -159,13 +158,13 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
     //smooth_sensors();                    
     
     
-   printf("deltat %f  ms: %d----------------------------------\n",deltat,taken_ms);
+   //printf("deltat %f  ms: %d----------------------------------\n",deltat,taken_ms);
   
   // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
    //                                             gyro.x,gyro.y,gyro.z, velocity_ef.x, velocity_ef.y,velocity_ef.z);
-    printf("P: %d %d %d\n",location.lat,location.lng,location.alt);
-    printf("P(m) %f %f %f\n",position.x,position.y,position.z);
-    printf("v(m/s) %f %f %f\n",velocity_ef.x,velocity_ef.y,velocity_ef.z);
+   // printf("P: %d %d %d\n",location.lat,location.lng,location.alt);
+   // printf("P(m) %f %f %f\n",position.x,position.y,position.z);
+   // printf("v(m/s) %f %f %f\n",velocity_ef.x,velocity_ef.y,velocity_ef.z);
   //  printf("uvw_t(m/s) %f %f %f\n",velocity_t.x,velocity_t.y,velocity_t.z);
     
    // printf("H: %d %d %d\n",home.lat,home.lng,home.alt);
@@ -174,10 +173,10 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
   //  printf("roll %f %f  pitch %f %f  yaw  %f %f\n",static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,roll,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,pitch,
   //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE,yaw);
-    ch[0] = pkt.g_packet.ch[0];
+/*     ch[0] = pkt.g_packet.ch[0];
     ch[1] = pkt.g_packet.ch[1];
     ch[2] = pkt.g_packet.ch[2];
-    ch[3] = pkt.g_packet.ch[3];
+    ch[3] = pkt.g_packet.ch[3]; */
    
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
@@ -193,7 +192,7 @@ void FlightGear::recv_fdm(const struct sitl_input &input)
 /*
   Drain remaining data on the socket to prevent phase lag.
  */
-void FlightGear::drain_sockets()
+void FlightGear2::drain_sockets()
 {
     const uint16_t buflen = 1024;
     char buf[buflen];
@@ -214,9 +213,9 @@ void FlightGear::drain_sockets()
 }
 
 /*
-  update the FlightGear simulation by one time step
+  update the FlightGear2 simulation by one time step
  */
-void FlightGear::update(const struct sitl_input &input)
+void FlightGear2::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
@@ -235,4 +234,4 @@ void FlightGear::update(const struct sitl_input &input)
 }  // namespace SITL
 
 
-#endif  // HAL_SIM_FLIGHTGEAR_ENABLED
+#endif  // HAL_SIM_FlightGear2_ENABLED

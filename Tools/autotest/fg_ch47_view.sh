@@ -3,6 +3,8 @@
 #./sim_vehicle.py -v ArduCopter -f heli -L PHNL --model flightgear:127.0.0.1 --map --console
 #    --generic=socket,in,10,,5003,udp,MAVLink \
 #    --generic=socket,out,10,,5001,udp,MAVLink \
+#    { "AHRS_EKF_TYPE", 10 },
+#    { "INS_GYR_CAL", 0 },
 AUTOTESTDIR=$(dirname $0)
 
 nice fgfs \
@@ -11,7 +13,7 @@ nice fgfs \
     --model-hz=1000 \
     --aircraft=ch47 \
     --fg-aircraft="$AUTOTESTDIR/aircraft" \
-    --airport=CMAC \
+    --airport=PHNL \
     --geometry=650x550 \
     --bpp=32 \
     --disable-hud-3d \
