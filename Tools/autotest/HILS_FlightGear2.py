@@ -189,17 +189,18 @@ if __name__ == '__main__':
       
       a = str(seri.serial_data_in).split(':')
       print(a)
-      send_data = []
-      send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
-      send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
-      send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
-      send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
+      if len(a) == 10:
+        send_data = []
+        send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
+        send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
+        send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
+        send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
 
-      #send_data[2] = 0.4
-      #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
-      send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
-      #print(send_data)
-      udp.write(send_pack)
+        #send_data[2] = 0.4
+        #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
+        send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+        #print(send_data)
+        udp.write(send_pack)
      
      
 

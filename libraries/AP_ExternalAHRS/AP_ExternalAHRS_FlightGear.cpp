@@ -226,8 +226,13 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     gps.ned_vel_north = pkt1.speed_ned_mps[0];
     gps.ned_vel_east = pkt1.speed_ned_mps[1];
     gps.ned_vel_down = pkt1.speed_ned_mps[2];
-    
-    //uart->printf("%f %f %f\n",gps.ned_vel_north,gps.ned_vel_east,gps.ned_vel_down);
+
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
+    }
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps instance %d",instance);
+
 
     if (gps.fix_type >= 3 && !state.have_origin) {
         WITH_SEMAPHORE(state.sem);
@@ -238,10 +243,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         state.have_origin = true;
     } 
 
-    uint8_t instance;
-    if (AP::gps().get_first_external_instance(instance)) {
-        AP::gps().handle_external(gps, instance);
-    }
+
     
     Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
     Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};

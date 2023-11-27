@@ -1032,7 +1032,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     ftype daxVar;       // X axis delta angle noise variance rad^2
     ftype dayVar;       // Y axis delta angle noise variance rad^2
     ftype dazVar;       // Z axis delta angle noise variance rad^2
-    ftype dvxVar;       // X axis delta velocity variance noise (m/s)^2
+    ftype dvxVar;       // X axis delta  noise (m/s)^2
     ftype dvyVar;       // Y axis delta velocity variance noise (m/s)^2
     ftype dvzVar;       // Z axis delta velocity variance noise (m/s)^2
     ftype dvx;          // X axis delta velocity (m/s)
