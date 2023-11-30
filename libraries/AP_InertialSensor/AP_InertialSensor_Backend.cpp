@@ -9,7 +9,7 @@
 #include <AP_Module/AP_Module.h>
 #endif
 #include <stdio.h>
-
+#include <GCS_MAVLink/GCS.h>
 #define SENSOR_RATE_DEBUG 0
 
 #ifndef AP_HEATER_IMU_INSTANCE
@@ -176,6 +176,10 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
 
     _imu._delta_angle_acc[instance].zero();
     _imu._delta_angle_acc_dt[instance] = 0;
+
+    /* if(instance==0){
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "_publish_gyro %f %f %f",gyro.x,gyro.y,gyro.z);
+    } */
 }
 
 
@@ -262,12 +266,14 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         return;
     }
     float dt;
-
+    
     _update_sensor_rate(_imu._sample_gyro_count[instance], _imu._sample_gyro_start_us[instance],
                         _imu._gyro_raw_sample_rates[instance]);
 
     uint64_t last_sample_us = _imu._gyro_last_sample_us[instance];
-
+    
+    
+    
     /*
       we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
@@ -281,7 +287,7 @@ void AP_InertialSensor_Backend::_notify_new_gyro_raw_sample(uint8_t instance,
         _imu._gyro_last_sample_us[instance] = sample_us;
     } else {
         // don't accept below 40Hz
-        if (_imu._gyro_raw_sample_rates[instance] < 40) {
+        if (_imu._gyro_raw_sample_rates[instance] < 10) {
             return;
         }
 
@@ -376,7 +382,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_angle(uint8_t instance, const 
     uint64_t last_sample_us = _imu._gyro_last_sample_us[instance];
 
     // don't accept below 40Hz
-    if (_imu._gyro_raw_sample_rates[instance] < 40) {
+    if (_imu._gyro_raw_sample_rates[instance] < 10) {
         return;
     }
 
@@ -518,8 +524,8 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
 
     uint64_t last_sample_us = _imu._accel_last_sample_us[instance];
 
-    /*
-      we have two classes of sensors. FIFO based sensors produce data
+    
+     /* we have two classes of sensors. FIFO based sensors produce data
       at a very predictable overall rate, but the data comes in
       bunches, so we use the provided sample rate for deltaT. Non-FIFO
       sensors don't bunch up samples, but also tend to vary in actual
@@ -531,13 +537,14 @@ void AP_InertialSensor_Backend::_notify_new_accel_raw_sample(uint8_t instance,
         _imu._accel_last_sample_us[instance] = sample_us;
     } else {
         // don't accept below 40Hz
-        if (_imu._accel_raw_sample_rates[instance] < 40) {
+        if (_imu._accel_raw_sample_rates[instance] < 10) {
             return;
         }
 
         dt = 1.0f / _imu._accel_raw_sample_rates[instance];
         _imu._accel_last_sample_us[instance] = AP_HAL::micros64();
         sample_us = _imu._accel_last_sample_us[instance];
+        
     }
 
 #if AP_MODULE_SUPPORTED
@@ -606,7 +613,7 @@ void AP_InertialSensor_Backend::_notify_new_delta_velocity(uint8_t instance, con
     uint64_t last_sample_us = _imu._accel_last_sample_us[instance];
 
     // don't accept below 40Hz
-    if (_imu._accel_raw_sample_rates[instance] < 40) {
+    if (_imu._accel_raw_sample_rates[instance] < 10) {
         return;
     }
 
@@ -756,6 +763,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
+       
 #if HAL_GYROFFT_ENABLED
         // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
         _imu._gyro_for_fft[instance] = _imu._last_gyro_for_fft[instance];

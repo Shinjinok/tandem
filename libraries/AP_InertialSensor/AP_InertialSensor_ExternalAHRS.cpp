@@ -29,6 +29,7 @@ void AP_InertialSensor_ExternalAHRS::handle_external(const AP_ExternalAHRS::ins_
     _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);
     _rotate_and_correct_gyro(gyro_instance, gyro);
     _notify_new_gyro_raw_sample(gyro_instance, gyro, AP_HAL::micros64());
+     
 }
 
 bool AP_InertialSensor_ExternalAHRS::update(void)

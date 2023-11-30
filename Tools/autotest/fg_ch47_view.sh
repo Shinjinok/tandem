@@ -1,6 +1,6 @@
 #!/bin/sh
 #https://wiki.flightgear.org/Property_Tree/Native_Protocol_Slaving
-#./sim_vehicle.py -v ArduCopter -f heli -L PHNL --model flightgear:127.0.0.1 --map --console
+#./sim_vehicle.py -v ArduCopter -f heli -L PHNL --model flightgear2:127.0.0.1 --map --console
 #    --generic=socket,in,10,,5003,udp,MAVLink \
 #    --generic=socket,out,10,,5001,udp,MAVLink \
 #    { "AHRS_EKF_TYPE", 10 },

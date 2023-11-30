@@ -184,6 +184,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     uint16_t values[8] {};
     hal.rcout->read(values, 8);
     uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+    
     //uart->write((const uint8_t *) &values[0],sizeof(values));
     //uart->printf("\n");
 
@@ -192,24 +193,40 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     
     last_pkt1_ms = AP_HAL::millis();
 
+
     int32_t lat = pkt1.lat_lon[0] * 1.0e7;
     int32_t lon = pkt1.lat_lon[1] * 1.0e7;
     int32_t alt = pkt1.alt_m * 1.0e2;
+    Location loc = Location{lat,lon,alt,Location::AltFrame::ABSOLUTE};
+    Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
+    Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
+    Vector3f velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
+    Quaternion quat;
+    quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
     
     {
         WITH_SEMAPHORE(state.sem);
-        state.velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
+        state.accel = accel;
+        state.gyro = gyro;
+        state.quat = quat;
+        state.have_quaternion = true;
+
+        state.velocity = velocity;
         state.have_velocity = true;
 
-        state.location = Location{lat, lon, alt, Location::AltFrame::ABSOLUTE};
-        state.have_location = true; 
+        state.location = loc;
+        state.have_location = true;
+
+        if (!state.have_origin) {
+            state.origin = loc;
+            state.have_origin = true;
+        } 
     }
-
-
+        
     AP_ExternalAHRS::gps_data_message_t gps;
     // get ToW in milliseconds
-    gps.gps_week = (uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK ;
-    gps.ms_tow = (uint64_t) (pkt1.timestamp * 1e3);//sec to ms
+    gps.gps_week = (uint16_t) ((uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK);
+    gps.ms_tow = (uint32_t) ((uint64_t) pkt1.timestamp % AP_MSEC_PER_WEEK);
     gps.fix_type = 5;
     gps.satellites_in_view = 100;
 
@@ -234,31 +251,6 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps instance %d",instance);
 
 
-    if (gps.fix_type >= 3 && !state.have_origin) {
-        WITH_SEMAPHORE(state.sem);
-        state.origin = Location{int32_t(pkt1.lat_lon[0] * 1.0e7),
-                                int32_t(pkt1.lat_lon[1] * 1.0e7),
-                                int32_t(pkt1.alt_m * 1.0e2),
-                                Location::AltFrame::ABSOLUTE};
-        state.have_origin = true;
-    } 
-
-
-    
-    Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
-    Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
-    Vector3f rpy = Vector3f(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
-    //uart->printf("%f %f %f\n",accel.x,accel.y,accel.z);
-
-    {
-        WITH_SEMAPHORE(state.sem);
-        state.accel = accel;
-        state.gyro = gyro;
-        state.quat.from_euler(rpy.x,rpy.y,rpy.z);
-        state.have_quaternion = true;
-    }
-        
-
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
     {
@@ -267,9 +259,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         baro.pressure_pa = pkt1.pressure_pascal;
         baro.temperature = 25.0f;
         //uart->printf("baro %f\n",pkt1.pressure_pascal);
- 
         AP::baro().handle_external(baro);
-     
     } 
 #endif
 
@@ -277,19 +267,15 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
      {
         AP_ExternalAHRS::mag_data_message_t mag;
         mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
-        //mag.field *= 1000; // to mGauss
-
         AP::compass().handle_external(mag);
     } 
 #endif 
 
     {
         AP_ExternalAHRS::ins_data_message_t ins;
-
-        ins.accel = accel;
-        ins.gyro = gyro;
-        ins.temperature = -300.0f;
-       // uart->printf("%f %f %f\n",ins.accel.x,ins.accel.y,ins.accel.z);
+        ins.accel = state.accel;
+        ins.gyro = state.gyro;
+        ins.temperature = 30.0f;
         AP::ins().handle_external(ins);
     }
 
@@ -314,12 +300,9 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
  
      AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
                        "sdddnnnDUm", "F000000GG0",
-                       "QffffffLLf",
-                       AP_HAL::micros64(),
-                       rpy.x, rpy.y, rpy.z,
-                       pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[0],
-                       lat, lon,
-                       pkt1.alt_m);
+                       "QffffffLLf", AP_HAL::micros64(),
+                       pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2],
+                       velocity.x, velocity.y, velocity.z, lat, lon, alt);
 }
 
 
@@ -337,7 +320,7 @@ bool AP_ExternalAHRS_FlightGear::healthy(void) const
 {
     const uint32_t now = AP_HAL::millis();
    
-    return (now - last_pkt1_ms < 200);
+    return (now - last_pkt1_ms < 100);
 }
 
 bool AP_ExternalAHRS_FlightGear::initialised(void) const

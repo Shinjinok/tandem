@@ -12,6 +12,7 @@
 # param set FS_OPTIONS 0  <--Failsafe disable
 # param set DISARM_DELAY 0
 # param set ARMING_CHECk 0
+# param set H_SW_TYPE 1
 
 # RC_OPTION ignore rc receiver
 
@@ -28,6 +29,7 @@ import sys
 import errno
 import numpy as np # Scientific computing library for Python
 from scipy.spatial.transform import Rotation as R
+import time
 
 
 PORT = '/dev/ttyUSB0'
@@ -36,6 +38,16 @@ PORT = '/dev/ttyUSB0'
 PORT2= '/dev/pts/4'
 
 deg2rad = 0.0174533
+
+class GPS:
+  lat = None
+  lon = None
+  fix_type = 5
+class ATT:
+  roll = None
+  pitch = None
+  yaw = None
+  
 
 # RPY/Euler angles to Rotation Vector
 def rotation_matrix(roll_deg, pitch_deg, yaw_deg):
@@ -142,37 +154,41 @@ if __name__ == '__main__':
   seri = usbSerial(PORT)
   seri2 = None#usbSerial(PORT2)
 
- 
+  gps = GPS()
+  att = ATT()
+  #1/1/1970~1/6/1980 522weeks 3days tokyo utc+9 and correct 18secs
+  fix_time = -522*7*24*60*60*1000 - 3*24*60*60*1000  + 9*60*60*1000 + 18*1000
   while True:
     
     if udp.udp_data_in_flag:
       udp.udp_data_in_flag = False
       lat = udp.udp_data_in[1]
       lon = udp.udp_data_in[2]
-      m = mavextra.expected_earth_field_lat_lon(lat, lon)
+      
+
+      gps.lat = udp.udp_data_in[1] *1e7
+      gps.lon = udp.udp_data_in[2] *1e7
+      att.roll = udp.udp_data_in[13]*deg2rad
+      att.pitch = udp.udp_data_in[14]*deg2rad
+      att.yaw = udp.udp_data_in[15]*deg2rad
+      m = mavextra.expected_mag(gps,att)
+      #print("m",m,"---")
       #print("{%f, %f, {%.3f, %.3f, %.3f}}," % (lat, lon, m.x, m.y, m.z))
-      rot = rotation_matrix(udp.udp_data_in[13], udp.udp_data_in[14], udp.udp_data_in[15])
-      v=[]
-      v.append(m.x)
-      v.append(m.y)
-      v.append(m.z)
-      rm = np.dot(rot, v)
       
-      #print("rm",rm,"---")
       baro = float(udp.udp_data_in[16]*3386.39) # Convert millibar to pascals
-      
+      mt= time.time()*1000 + fix_time
       d = pack('<3B3d18f',0xFE, 0xBB, 0xAA,
-               udp.udp_data_in[0],
+               mt,
                udp.udp_data_in[1],#lat
                udp.udp_data_in[2],#lat
                udp.udp_data_in[3],#alt
                udp.udp_data_in[4],udp.udp_data_in[5],udp.udp_data_in[6],# pqr
-               -udp.udp_data_in[7]*0.3048,-udp.udp_data_in[8]*0.3048,-udp.udp_data_in[9]*0.3048, #acc x y z
+               udp.udp_data_in[7]*0.3048,udp.udp_data_in[8]*0.3048,udp.udp_data_in[9]*0.3048, #acc x y z
                udp.udp_data_in[10]*0.3048,udp.udp_data_in[11]*0.3048,udp.udp_data_in[12]*0.3048, #speed_ned
                udp.udp_data_in[13]*deg2rad,udp.udp_data_in[14]*deg2rad,udp.udp_data_in[15]*deg2rad,#roll pitch yaw
                baro, #pressure pascal 
                udp.udp_data_in[17],#rpm
-               rm[0],rm[1],rm[2]) 
+               m.x, m.y, m.z)
 
       
       seri.write(d)
@@ -188,18 +204,15 @@ if __name__ == '__main__':
       #print("serial1 received data", seri.serial_data_in , deltat)
       
       a = str(seri.serial_data_in).split(':')
-      print(a)
+      print(a,"m ",m,"t",mt)
       if len(a) == 10:
         send_data = []
         send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
         send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
         send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
         send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
-
-        #send_data[2] = 0.4
-        #send_data= pack('>5f',0.1,0.2,0.3,0.4,0.5)
         send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
-        #print(send_data)
+
         udp.write(send_pack)
      
      
