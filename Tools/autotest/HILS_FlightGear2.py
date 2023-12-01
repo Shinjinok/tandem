@@ -13,6 +13,9 @@
 # param set DISARM_DELAY 0
 # param set ARMING_CHECk 0
 # param set H_SW_TYPE 1
+# param set BRD_SAFETY_DEFLT 0
+# param set ATC_RATE_Y_MAX 10
+
 
 # RC_OPTION ignore rc receiver
 

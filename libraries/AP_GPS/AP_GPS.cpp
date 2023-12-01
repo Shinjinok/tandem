@@ -52,7 +52,7 @@
 
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
-#define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
+#define GPS_MAX_RATE_MS 50 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
 #endif
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
@@ -229,7 +229,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
     // @User: Advanced
-    AP_GROUPINFO("_RATE_MS", 14, AP_GPS, _rate_ms[0], 200),
+    AP_GROUPINFO("_RATE_MS", 14, AP_GPS, _rate_ms[0], 50),
 
 #if GPS_MAX_RECEIVERS > 1
     // @Param: _RATE_MS2
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AP_GPS::var_info[] = {
     // @Values: 100:10Hz,125:8Hz,200:5Hz
     // @Range: 50 200
     // @User: Advanced
-    AP_GROUPINFO("_RATE_MS2", 15, AP_GPS, _rate_ms[1], 200),
+    AP_GROUPINFO("_RATE_MS2", 15, AP_GPS, _rate_ms[1], 50),
 #endif
 
     // @Param: _POS1_X
@@ -741,6 +741,7 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
 #if HAL_EXTERNAL_AHRS_ENABLED
     case GPS_TYPE_EXTERNAL_AHRS:
         dstate->auto_detected_baud = false; // specified, not detected
+        
         return new AP_GPS_ExternalAHRS(*this, state[instance], nullptr);
 #endif
     default:
@@ -919,7 +920,7 @@ bool AP_GPS::should_log() const
  */
 void AP_GPS::update_instance(uint8_t instance)
 {
-    if (_type[instance] == GPS_TYPE_HIL) {
+    if (_type[instance] == GPS_TYPE_HIL ) {
         // in HIL, leave info alone
         return;
     }
@@ -981,6 +982,7 @@ void AP_GPS::update_instance(uint8_t instance)
         }
     } else {
         if (state[instance].corrected_timestamp_updated) {
+            
             // set the timestamp for this messages based on
             // set_uart_timestamp() or per specific transport in backend
             // , if available
@@ -994,7 +996,7 @@ void AP_GPS::update_instance(uint8_t instance)
         if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
-
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "timing[instance].delta_time_ms %d",timing[instance].delta_time_ms);
         data_should_be_logged = true;
     }
 
@@ -1111,7 +1113,8 @@ void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
 void AP_GPS::update(void)
 {
     WITH_SEMAPHORE(rsem);
-
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update);%ld", AP_HAL::millis()-last_time_ms);
+    last_time_ms = AP_HAL::millis();
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
     }
@@ -1362,6 +1365,7 @@ void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, con
 {
     if (_type[instance] == GPS_TYPE_EXTERNAL_AHRS && drivers[instance] != nullptr) {
         drivers[instance]->handle_external(pkt);
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "drivers[instance]->handle_external(pkt);%d",instance);
     }
 }
 #endif // HAL_EXTERNAL_AHRS_ENABLED
@@ -2115,15 +2119,20 @@ void AP_GPS::calc_blended_state(void)
 
 bool AP_GPS::is_healthy(uint8_t instance) const
 {
+    
+
     if (instance >= GPS_MAX_INSTANCES) {
         return false;
     }
+   
 
     if (get_type(_primary.get()) == GPS_TYPE_NONE) {
         return false;
     }
-
+    
 #ifndef HAL_BUILD_AP_PERIPH
+    
+
     /*
       on AP_Periph handling of timing is done by the flight controller
       receiving the DroneCAN messages
@@ -2140,6 +2149,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "t.delayed_count %d",t.delayed_count);
     if (!delay_ok) {
         return false;
     }
@@ -2147,6 +2157,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
 
 #if defined(GPS_BLENDED_INSTANCE)
     if (instance == GPS_BLENDED_INSTANCE) {
+
         return blend_health_check();
     }
 #endif

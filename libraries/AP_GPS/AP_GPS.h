@@ -786,6 +786,8 @@ private:
     // logging support
     void Write_GPS(uint8_t instance);
 
+    uint32_t last_time_ms = 0;
+
 };
 
 namespace AP {

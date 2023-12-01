@@ -18,7 +18,7 @@
 //
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include "AP_GPS_ExternalAHRS.h"
-
+#include <GCS_MAVLink/GCS.h>
 #if HAL_EXTERNAL_AHRS_ENABLED
 
 // Reading does nothing in this class; we simply return whether or not
@@ -37,6 +37,8 @@ bool AP_GPS_ExternalAHRS::read(void)
 // corresponding gps data appropriately;
 void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt)
 {
+
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "handle_external %ld",AP_HAL::millis() - state.last_gps_time_ms);
     check_new_itow(pkt.ms_tow, sizeof(pkt));
 
     state.time_week = pkt.gps_week;
@@ -72,9 +74,8 @@ void AP_GPS_ExternalAHRS::handle_external(const AP_ExternalAHRS::gps_data_messag
     state.horizontal_accuracy = pkt.horizontal_pos_accuracy;
     state.vertical_accuracy = pkt.vertical_pos_accuracy;
     state.speed_accuracy = pkt.horizontal_vel_accuracy;
-
     state.last_gps_time_ms = AP_HAL::millis();
-
+     
     new_data = true;
 }
 

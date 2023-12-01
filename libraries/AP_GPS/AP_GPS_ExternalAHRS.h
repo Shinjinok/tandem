@@ -41,6 +41,7 @@ public:
 
 private:
     bool new_data;
+    
 };
 
 #endif // HAL_EXTERNAL_AHRS_ENABLED
