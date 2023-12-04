@@ -211,44 +211,50 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         state.quat = quat;
         state.have_quaternion = true;
 
-        state.velocity = velocity;
-        state.have_velocity = true;
-
-        state.location = loc;
-        state.have_location = true;
-
-        if (!state.have_origin) {
-            state.origin = loc;
-            state.have_origin = true;
-        } 
-    }
         
-    AP_ExternalAHRS::gps_data_message_t gps;
-    // get ToW in milliseconds
-    gps.gps_week = (uint16_t) ((uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK);
-    gps.ms_tow = (uint32_t) ((uint64_t) pkt1.timestamp % AP_MSEC_PER_WEEK);
-    gps.fix_type = 5;
-    gps.satellites_in_view = 100;
-
-    gps.horizontal_pos_accuracy = 0.01f;
-    gps.vertical_pos_accuracy = 0.01f;
-    gps.horizontal_vel_accuracy = 0.01f;
-
-    gps.hdop = 1.0f;
-    gps.vdop = 1.0f;
-    gps.latitude = lat;
-    gps.longitude = lon;
-    gps.msl_altitude = alt;
-
-    gps.ned_vel_north = pkt1.speed_ned_mps[0];
-    gps.ned_vel_east = pkt1.speed_ned_mps[1];
-    gps.ned_vel_down = pkt1.speed_ned_mps[2];
-
-    uint8_t instance;
-    if (AP::gps().get_first_external_instance(instance)) {
-        AP::gps().handle_external(gps, instance);
     }
-    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps instance %d",instance);
+    if (gps_count++ > 4){
+        gps_count = 0;
+        {
+            WITH_SEMAPHORE(state.sem);
+            state.velocity = velocity;
+            state.have_velocity = true;
+
+            state.location = loc;
+            state.have_location = true;
+
+            if (!state.have_origin) {
+                state.origin = loc;
+                state.have_origin = true;
+            } 
+        }
+        AP_ExternalAHRS::gps_data_message_t gps;
+        // get ToW in milliseconds
+        gps.gps_week = (uint16_t) ((uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK);
+        gps.ms_tow = (uint32_t) ((uint64_t) pkt1.timestamp % AP_MSEC_PER_WEEK);
+        gps.fix_type = 5;
+        gps.satellites_in_view = 100;
+
+        gps.horizontal_pos_accuracy = 0.01f;
+        gps.vertical_pos_accuracy = 0.01f;
+        gps.horizontal_vel_accuracy = 0.01f;
+
+        gps.hdop = 1.0f;
+        gps.vdop = 1.0f;
+        gps.latitude = lat;
+        gps.longitude = lon;
+        gps.msl_altitude = alt;
+
+        gps.ned_vel_north = pkt1.speed_ned_mps[0];
+        gps.ned_vel_east = pkt1.speed_ned_mps[1];
+        gps.ned_vel_down = pkt1.speed_ned_mps[2];
+
+        uint8_t instance;
+        if (AP::gps().get_first_external_instance(instance)) {
+            AP::gps().handle_external(gps, instance);
+        }
+        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps instance %d",instance);
+    }
 
 
 

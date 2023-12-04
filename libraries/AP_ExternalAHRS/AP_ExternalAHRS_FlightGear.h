@@ -49,6 +49,7 @@ public:
     const char* get_name() const override;
 
 private:
+    int gps_count = 0;
     AP_HAL::UARTDriver *uart;
     AP_Motors *motors;
     int8_t port_num;

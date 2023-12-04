@@ -624,7 +624,8 @@ public:
     const EKFGSF_yaw *get_yaw_estimator(void) const;
 
 private:
-
+    uint32_t last_time = 0;
+    int count =0;
     // optional view class
     AP_AHRS_View *_view;
 
