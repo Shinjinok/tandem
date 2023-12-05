@@ -206,55 +206,49 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     
     {
         WITH_SEMAPHORE(state.sem);
-        state.accel = accel;
-        state.gyro = gyro;
+  /*       state.accel = accel;
+        state.gyro = gyro;  */
         state.quat = quat;
         state.have_quaternion = true;
+        state.velocity = velocity;
+        state.have_velocity = true;
 
+        state.location = loc;
+        state.have_location = true;
+
+        if (!state.have_origin) {
+            state.origin = loc;
+            state.have_origin = true;
+        } 
         
     }
-    if (gps_count++ > 4){
-        gps_count = 0;
-        {
-            WITH_SEMAPHORE(state.sem);
-            state.velocity = velocity;
-            state.have_velocity = true;
+     AP_ExternalAHRS::gps_data_message_t gps;
+    // get ToW in milliseconds
+    gps.gps_week = (uint16_t) ((uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK);
+    gps.ms_tow = (uint32_t) ((uint64_t) pkt1.timestamp % AP_MSEC_PER_WEEK);
+    gps.fix_type = 5;
+    gps.satellites_in_view = 100;
 
-            state.location = loc;
-            state.have_location = true;
+    gps.horizontal_pos_accuracy = 0.0005f;
+    gps.vertical_pos_accuracy = 0.0005f;
+    gps.horizontal_vel_accuracy = 0.0005f;
 
-            if (!state.have_origin) {
-                state.origin = loc;
-                state.have_origin = true;
-            } 
-        }
-        AP_ExternalAHRS::gps_data_message_t gps;
-        // get ToW in milliseconds
-        gps.gps_week = (uint16_t) ((uint64_t) pkt1.timestamp / AP_MSEC_PER_WEEK);
-        gps.ms_tow = (uint32_t) ((uint64_t) pkt1.timestamp % AP_MSEC_PER_WEEK);
-        gps.fix_type = 5;
-        gps.satellites_in_view = 100;
+    gps.hdop = 1.0f;
+    gps.vdop = 1.0f;
+    gps.latitude = lat;
+    gps.longitude = lon;
+    gps.msl_altitude = alt;
 
-        gps.horizontal_pos_accuracy = 0.01f;
-        gps.vertical_pos_accuracy = 0.01f;
-        gps.horizontal_vel_accuracy = 0.01f;
+    gps.ned_vel_north = velocity.x;
+    gps.ned_vel_east = velocity.y;
+    gps.ned_vel_down = velocity.z;
 
-        gps.hdop = 1.0f;
-        gps.vdop = 1.0f;
-        gps.latitude = lat;
-        gps.longitude = lon;
-        gps.msl_altitude = alt;
-
-        gps.ned_vel_north = pkt1.speed_ned_mps[0];
-        gps.ned_vel_east = pkt1.speed_ned_mps[1];
-        gps.ned_vel_down = pkt1.speed_ned_mps[2];
-
-        uint8_t instance;
-        if (AP::gps().get_first_external_instance(instance)) {
-            AP::gps().handle_external(gps, instance);
-        }
-        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gps instance %d",instance);
+    uint8_t instance;
+    if (AP::gps().get_first_external_instance(instance)) {
+        AP::gps().handle_external(gps, instance);
     }
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro %f %f %f",gyro.x,gyro.y,gyro.z);
+
 
 
 
@@ -277,13 +271,13 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     } 
 #endif 
 
-    {
+   {
         AP_ExternalAHRS::ins_data_message_t ins;
-        ins.accel = state.accel;
-        ins.gyro = state.gyro;
+        ins.accel = accel;
+        ins.gyro = gyro;
         ins.temperature = 30.0f;
         AP::ins().handle_external(ins);
-    }
+    } 
 
 
     // @LoggerMessage: EAH1
@@ -304,11 +298,11 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     // @Field: UP: uncertainty in pitch
     // @Field: UY: uncertainty in yaw
  
-     AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
+/*      AP::logger().WriteStreaming("EAH1", "TimeUS,Roll,Pitch,Yaw,VN,VE,VD,Lat,Lon,Alt",
                        "sdddnnnDUm", "F000000GG0",
                        "QffffffLLf", AP_HAL::micros64(),
                        pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2],
-                       velocity.x, velocity.y, velocity.z, lat, lon, alt);
+                       velocity.x, velocity.y, velocity.z, lat, lon, alt); */
 }
 
 

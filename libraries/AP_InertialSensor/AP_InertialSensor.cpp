@@ -1024,7 +1024,7 @@ AP_InertialSensor::init(uint16_t loop_rate)
 
 bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
 {
-
+       
     if (!backend) {
         return false;
     }
@@ -1032,6 +1032,7 @@ bool AP_InertialSensor::_add_backend(AP_InertialSensor_Backend *backend)
         AP_HAL::panic("Too many INS backends");
     }
     _backends[_backend_count++] = backend;
+   
     return true;
 }
 

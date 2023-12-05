@@ -177,7 +177,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle_acc[instance].zero();
     _imu._delta_angle_acc_dt[instance] = 0;
 
-    /* if(instance==0){
+/*     if(instance==0){
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "_publish_gyro %f %f %f",gyro.x,gyro.y,gyro.z);
     } */
 }

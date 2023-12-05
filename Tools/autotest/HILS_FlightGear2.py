@@ -5,7 +5,7 @@
 #PARAMS:
 # param set AHRS_EKF_TYPE 11
 # param set EAHRS_TYPE 3
-# param set EAHRS_RATE 20
+# param set EAHRS_RATE 50
 # param set SERIAL2_PROTOCOL 36  
 # param set SERIAL2_BAUD 480 480600
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
@@ -15,8 +15,11 @@
 # param set H_SW_TYPE 1
 # param set BRD_SAFETY_DEFLT 0
 # param set ATC_RATE_Y_MAX 10
-
-
+# param set INS_USE2 0
+# param set INS_ENABLE_MASK 1
+# param set INS_FAST_SAMPLE 1
+# param set RK3_SRC1_POSZ 3
+# param set ATC_HOVR_ROL_TRM 0
 # RC_OPTION ignore rc receiver
 
 '''
@@ -38,7 +41,7 @@ import time
 PORT = '/dev/ttyUSB0'
 #virtual serial port
 #PORT = '/dev/pts/3' 
-PORT2= '/dev/pts/4'
+PORT2= '/dev/ttyUSB1'
 
 deg2rad = 0.0174533
 
@@ -155,7 +158,7 @@ if __name__ == '__main__':
   # Make sure all log messages show up
   udp = udp_socket("127.0.0.1:9003:9002")#ip, in ,out
   seri = usbSerial(PORT)
-  seri2 = None#usbSerial(PORT2)
+  seri2 =usbSerial(PORT2)
 
   gps = GPS()
   att = ATT()
@@ -195,6 +198,7 @@ if __name__ == '__main__':
 
       
       seri.write(d)
+      seri2.write(d)
       """  print("write to serial 1")
       print(udp.udp_data_in[6]) """
       time.sleep(0.01)
@@ -207,7 +211,7 @@ if __name__ == '__main__':
       #print("serial1 received data", seri.serial_data_in , deltat)
       
       a = str(seri.serial_data_in).split(':')
-      print(a,"m ",m,"t",mt)
+      print("primary ",a,"m ",m,"t",mt)
       if len(a) == 10:
         send_data = []
         send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
@@ -217,6 +221,25 @@ if __name__ == '__main__':
         send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
 
         udp.write(send_pack)
+        
+    if seri2.serial_data_in_flag:
+      seri2.serial_data_in_flag = False
+     # clock = time.clock_gettime(0)
+    #  deltat = clock - seri.delta_read_time 
+     # seri.delta_read_time = clock
+      #print("serial1 received data", seri.serial_data_in , deltat)
+      
+      a = str(seri.serial_data_in).split(':')
+      print("second ",a,"m ",m,"t",mt)
+      if len(a) == 10:
+        send_data = []
+        send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
+        send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
+        send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
+        send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
+        send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+
+       # udp.write(send_pack)    
      
      
 

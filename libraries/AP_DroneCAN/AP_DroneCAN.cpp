@@ -384,11 +384,11 @@ void AP_DroneCAN::loop(void)
         canard_iface.process(1);
 
         safety_state_send();
-        notify_state_send();
+/*         notify_state_send();
         check_parameter_callback_timeout();
         send_parameter_request();
-        send_parameter_save_request();
-        send_node_status();
+        send_parameter_save_request();*/
+        send_node_status(); 
         _dna_server.verify_nodes();
 
 #if AP_DRONECAN_SEND_GPS
