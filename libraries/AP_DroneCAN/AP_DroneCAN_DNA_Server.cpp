@@ -17,7 +17,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-
+//#define HAL_ENABLE_DRONECAN_DRIVERS 1
 #if HAL_ENABLE_DRONECAN_DRIVERS
 
 #include "AP_DroneCAN_DNA_Server.h"

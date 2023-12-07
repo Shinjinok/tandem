@@ -18,6 +18,8 @@
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
 
+//#define HAL_ENABLE_DRONECAN_DRIVERS 1
+
 #if HAL_ENABLE_DRONECAN_DRIVERS
 #include "AP_DroneCAN.h"
 #include <GCS_MAVLink/GCS.h>
@@ -383,8 +385,8 @@ void AP_DroneCAN::loop(void)
 
         canard_iface.process(1);
 
-        safety_state_send();
-/*         notify_state_send();
+ /*       safety_state_send();
+         notify_state_send();
         check_parameter_callback_timeout();
         send_parameter_request();
         send_parameter_save_request();*/

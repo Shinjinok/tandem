@@ -7,7 +7,7 @@
 # param set EAHRS_TYPE 3
 # param set EAHRS_RATE 50
 # param set SERIAL2_PROTOCOL 36  
-# param set SERIAL2_BAUD 480 480600
+# param set SERIAL2_BAUD 460 460800
 # param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
 # param set FS_OPTIONS 0  <--Failsafe disable
 # param set DISARM_DELAY 0
@@ -32,16 +32,13 @@ import serial
 import threading
 import time
 import sys
+import glob
 import errno
 import numpy as np # Scientific computing library for Python
 from scipy.spatial.transform import Rotation as R
 import time
-
-
-PORT = '/dev/ttyUSB0'
-#virtual serial port
-#PORT = '/dev/pts/3' 
-PORT2= '/dev/ttyUSB1'
+import serial.tools.list_ports
+import subprocess
 
 deg2rad = 0.0174533
 
@@ -87,7 +84,7 @@ def rotation_matrix(roll_deg, pitch_deg, yaw_deg):
 class usbSerial(object):
   def __init__(self, port):
     try:
-      self.seri = serial.Serial(port, baudrate=480600, timeout=1)
+      self.seri = serial.Serial(port, baudrate=460800, timeout=1)
     except Exception as e:
       print("error open serial port: " + str(e))
       exit()
@@ -152,14 +149,50 @@ class udp_socket(object):
       self.udp_data_in_flag = True
 
           
-
+rsp_serial1 = False
+rsp_serial2 = False
 
 if __name__ == '__main__':
-  # Make sure all log messages show up
-  udp = udp_socket("127.0.0.1:9003:9002")#ip, in ,out
-  seri = usbSerial(PORT)
-  seri2 =usbSerial(PORT2)
+  
+  
+  #subprocess.call(['xterm', '-e', 'mavproxy.py --master=/dev/ttyACM1 --console --map'])
+  #subprocess.call(['xterm', '-e', 'mavproxy.py --master=/dev/ttyACM3 --console --map'])
+  
+  
+  ports = serial.tools.list_ports.comports()
 
+  for port, desc, hwid in sorted(ports):
+      try:
+        hwid.index('USB VID:PID=10C4:EA60 SER=0003')
+        port1 = port
+        print("{}: {} [{}]".format(port, desc, hwid))
+        print("port1=",port1)
+      except:
+        print("Not found")
+      try:
+        hwid.index('USB VID:PID=10C4:EA60 SER=0002')
+        port2 = port
+        print("{}: {} [{}]".format(port, desc, hwid))
+        print("port2=",port2)
+      except:
+        print("Not found")  
+        
+    
+  
+        
+  udp = udp_socket("127.0.0.1:9003:9002")#ip, in ,out
+  try:
+    serial1 = usbSerial(port1)
+  except:
+    serial1  = None
+    print("no serial 1")
+   
+  try:  
+    serial2 =usbSerial(port2)
+  except:
+    serial2 = None
+    print("no serial 2")
+    
   gps = GPS()
   att = ATT()
   #1/1/1970~1/6/1980 522weeks 3days tokyo utc+9 and correct 18secs
@@ -178,13 +211,11 @@ if __name__ == '__main__':
       att.pitch = udp.udp_data_in[14]*deg2rad
       att.yaw = udp.udp_data_in[15]*deg2rad
       m = mavextra.expected_mag(gps,att)
-      #print("m",m,"---")
-      #print("{%f, %f, {%.3f, %.3f, %.3f}}," % (lat, lon, m.x, m.y, m.z))
-      
       baro = float(udp.udp_data_in[16]*3386.39) # Convert millibar to pascals
-      mt= time.time()*1000 + fix_time
+      gps_time= time.time()*1000 + fix_time
+
       d = pack('<3B3d18f',0xFE, 0xBB, 0xAA,
-               mt,
+               gps_time,
                udp.udp_data_in[1],#lat
                udp.udp_data_in[2],#lat
                udp.udp_data_in[3],#alt
@@ -196,50 +227,52 @@ if __name__ == '__main__':
                udp.udp_data_in[17],#rpm
                m.x, m.y, m.z)
 
-      
-      seri.write(d)
-      seri2.write(d)
-      """  print("write to serial 1")
-      print(udp.udp_data_in[6]) """
+      if serial1 != None:
+        serial1.write(d)
+      if serial2 != None: 
+        serial2.write(d)
+        
       time.sleep(0.01)
       
-    if seri.serial_data_in_flag:
-      seri.serial_data_in_flag = False
-      clock = time.clock_gettime(0)
-      deltat = clock - seri.delta_read_time 
-      seri.delta_read_time = clock
-      #print("serial1 received data", seri.serial_data_in , deltat)
-      
-      a = str(seri.serial_data_in).split(':')
-      print("primary ",a,"m ",m,"t",mt)
-      if len(a) == 10:
-        send_data = []
-        send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
-        send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
-        send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
-        send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
-        send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
-
-        udp.write(send_pack)
+    if serial1 != None :
+      if serial1.serial_data_in_flag:
+        serial1.serial_data_in_flag = False
+        clock = time.clock_gettime(0)
+        deltat = clock - serial1.delta_read_time 
+        serial1.delta_read_time = clock
+        a = str(serial1.serial_data_in).split(':')
+        print("primary   :",a,rsp_serial1)
+        if len(a) == 10:
+          send_data = []
+          send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
+          send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
+          send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
+          send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
+          send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+          udp.write(send_pack)
+          rsp_serial1 = True
+          rsp_serial2 = False 
+        else :
+          rsp_serial1 = False  
         
-    if seri2.serial_data_in_flag:
-      seri2.serial_data_in_flag = False
-     # clock = time.clock_gettime(0)
-    #  deltat = clock - seri.delta_read_time 
-     # seri.delta_read_time = clock
-      #print("serial1 received data", seri.serial_data_in , deltat)
-      
-      a = str(seri.serial_data_in).split(':')
-      print("second ",a,"m ",m,"t",mt)
-      if len(a) == 10:
-        send_data = []
-        send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
-        send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
-        send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
-        send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
-        send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
-
-       # udp.write(send_pack)    
+    if serial2 != None :
+      if serial2.serial_data_in_flag:
+        serial2.serial_data_in_flag = False
+        a = str(serial2.serial_data_in).split(':')
+        print("secondary :",a,rsp_serial2)
+        if len(a) == 10:
+          send_data = []
+          send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
+          send_data.append(float((float(a[2] ) - 1500.0) / -250.0))
+          send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
+          send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
+          send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+          
+          if rsp_serial1 == False :
+            udp.write(send_pack)
+            rsp_serial2 = True
+        else :
+          rsp_serial2 = False        
      
      
 

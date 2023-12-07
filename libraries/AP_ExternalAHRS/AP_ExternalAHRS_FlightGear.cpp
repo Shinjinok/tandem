@@ -206,8 +206,8 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     
     {
         WITH_SEMAPHORE(state.sem);
-  /*       state.accel = accel;
-        state.gyro = gyro;  */
+        state.accel = accel;
+        state.gyro = gyro; 
         state.quat = quat;
         state.have_quaternion = true;
         state.velocity = velocity;
