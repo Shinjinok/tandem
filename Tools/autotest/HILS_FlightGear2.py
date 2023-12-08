@@ -39,6 +39,7 @@ from scipy.spatial.transform import Rotation as R
 import time
 import serial.tools.list_ports
 import subprocess
+from pynput.keyboard import Key, Listener
 
 deg2rad = 0.0174533
 
@@ -50,8 +51,28 @@ class ATT:
   roll = None
   pitch = None
   yaw = None
-  
 
+rsp_serial1 = True
+rsp_serial2 = False
+  
+def on_press(key):
+  global rsp_serial1
+  global rsp_serial2
+  if key == Key.left :
+    rsp_serial1 = True
+    rsp_serial2 = False
+    print('Key %s pressed' % key)
+  
+  if key == Key.right:
+    rsp_serial1 = False
+    rsp_serial2 = True
+    print('Key %s pressed' % key)
+        
+listener = Listener(
+    on_press=on_press)
+listener.start()
+    
+    
 # RPY/Euler angles to Rotation Vector
 def rotation_matrix(roll_deg, pitch_deg, yaw_deg):
 
@@ -149,8 +170,7 @@ class udp_socket(object):
       self.udp_data_in_flag = True
 
           
-rsp_serial1 = False
-rsp_serial2 = False
+
 
 if __name__ == '__main__':
   
@@ -241,7 +261,7 @@ if __name__ == '__main__':
         deltat = clock - serial1.delta_read_time 
         serial1.delta_read_time = clock
         a = str(serial1.serial_data_in).split(':')
-        print("primary   :",a,rsp_serial1)
+        
         if len(a) == 10:
           send_data = []
           send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
@@ -249,17 +269,19 @@ if __name__ == '__main__':
           send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
           send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
           send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
-          udp.write(send_pack)
-          rsp_serial1 = True
-          rsp_serial2 = False 
-        else :
-          rsp_serial1 = False  
+          if rsp_serial1 == True :
+            print("primary   :",a,rsp_serial1)
+            udp.write(send_pack)
+          #rsp_serial1 = True
+          #rsp_serial2 = False 
+        #else :
+          #rsp_serial1 = False  
         
     if serial2 != None :
       if serial2.serial_data_in_flag:
         serial2.serial_data_in_flag = False
         a = str(serial2.serial_data_in).split(':')
-        print("secondary :",a,rsp_serial2)
+        
         if len(a) == 10:
           send_data = []
           send_data.append(float((float(a[1] ) - 1500.0) / 250.0))
@@ -268,11 +290,12 @@ if __name__ == '__main__':
           send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
           send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
           
-          if rsp_serial1 == False :
+          if rsp_serial2 == True :
+            print("secondary :",a,rsp_serial2)
             udp.write(send_pack)
-            rsp_serial2 = True
-        else :
-          rsp_serial2 = False        
+           # rsp_serial2 = True
+        #else :
+          #rsp_serial2 = False        
      
      
 
