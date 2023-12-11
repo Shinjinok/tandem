@@ -1,49 +1,185 @@
 # This Python file uses the following encoding: utf-8
+#HILS for run ./fg_ch47_view.sh
+# MAVProxy    mavproxy.py --master=/dev/ttyACM0 --console --map
+#virtual serial port  socat -d -d pty,raw,echo=0 pty,raw,echo=0
+#usage:
+#PARAMS:
+# param set AHRS_EKF_TYPE 11
+# param set EAHRS_TYPE 3
+# param set EAHRS_RATE 50
+# param set SERIAL2_PROTOCOL 36  
+# param set SERIAL2_BAUD 460 460800
+# param set GPS_TYPE 21 <--GPS_TYPE_EXTERNAL_AHRS = 21,
+# param set FS_OPTIONS 0  <--Failsafe disable
+# param set DISARM_DELAY 0
+# param set ARMING_CHECk 0
+# param set H_SW_TYPE 1
+# param set BRD_SAFETY_DEFLT 0
+# param set ATC_RATE_Y_MAX 10
+# param set INS_USE2 0
+# param set INS_ENABLE_MASK 1
+# param set INS_FAST_SAMPLE 1
+# param set RK3_SRC1_POSZ 3
+# param set ATC_HOVR_ROL_TRM 0
+# param set CAN_SLCAN_CPORT 1
+# RC_OPTION ignore rc receiver
 import sys
 import os
 import sys
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from PyQt5 import uic
 import serial
 import serial.tools.list_ports
-from mainwindow import Ui_MainWindow
-
-# python -m PyQt5.uic.pyuic -x [변환대상.ui] -o [변환완료이름.py]
+import common
 
 
-class HILS_FlightGear(QMainWindow):
-    def __init__(self):
-       QMainWindow.__init__(self)
-       self.main_ui = Ui_MainWindow()
-       self.main_ui.setupUi(self)
-       self.find_port()
-       self.show()
+# python -m PyQt5.uic.pyuic -x mainwindow.ui -o mainwindow.py
 
 
-    def find_port(self):
-        ports = serial.tools.list_ports.comports()
-        for port, desc, hwid in sorted(ports):
-            try:
-                hwid.index('USB VID:PID=10C4:EA60 SER=0003')
-                port1 = port
-                print("{}: {} [{}]".format(port, desc, hwid))
-                print("port1=",port1)
-                self.main_ui.comboBox.addItem(port1)
+RAD2DEG = 57.2958
 
-            except:
-                print("Not found")
+class HILS_FlightGear(QtWidgets.QDialog):
+    
+    def __init__(self, parent = None):
+       super().__init__(parent)
+       self.ui = uic.loadUi("form.ui", self)
+       self.ui.show()
 
-            try:
-                hwid.index('USB VID:PID=10C4:EA60 SER=0002')
-                port2 = port
-                print("{}: {} [{}]".format(port, desc, hwid))
-                print("port2=",port2)
-                self.main_ui.comboBox.addItem(port2)
-            except:
-                print("Not found")
+       self.port1 = None
+       self.port2 = None
+       self.serial1 = None
+       self.serial2 = None
+       port1 , hwid1, port2, hwid2 = common.get_serial_port()
+      
+       self.ui.label.setText(port1 + hwid1)
+       self.serial1 = common.usbSerial(port1)
+       self.serial1.packReady.connect(self.receive_from_serial1)
+       
+       text, port_list = common.get_pixhawk_port()
+       self.ui.textEdit_4.setText(text)
+       for i in range(len(port_list)):
+         self.ui.comboBox.addItem(port_list[i])
+
+       self.udp = common.udp_socket("127.0.0.1:9003:9002")
+       self.pushButton_1.clicked.connect(self.handelButton_1)
+       self.pushButton_2.clicked.connect(self.handelButton_2)
+       self.pushButton_3.clicked.connect(self.handelButton_3)
+       self.pushButton_4.clicked.connect(self.handelButton_4)
+       self.udp.intReady.connect(self.update_textedit)
+       self.udp.packReady.connect(self.send_data_to_serial)
+       
+    def closeEvent(self, event):
+        
+        self.udp.close()
+        self.serial1.close()
+        #self.serial2.close()
+
+    def handelButton_1(self):
+       """ port1 , hwid1, port2, hwid2 = common.get_serial_port()
+       if port1 != None:
+         self.ui.label.setText(port1+hwid1)
+         self.serial1 = common.usbSerial(port1)
+         self.serial1.packReady.connect(self.receive_from_serial1)
+       else:
+          self.serial1 = None
+       if port2 != None:
+         self.ui.label_2.setText(port2+hwid2)
+         self.serial2 = common.usbSerial(port2)
+         #self.serial1.packReady.connect(self.receive_from_serial2)
+       else:
+         self.serial2 = None """
+
+       text, port_list = common.get_pixhawk_port()
+       self.ui.textEdit_4.setText(text)
+       self.ui.comboBox.clear()
+       for i in range(len(port_list)):
+         self.ui.comboBox.addItem(port_list[i])
+                   
+    def receive_from_serial1(self, data):
+        unpack, pack = self.serial1.parsing_data_from_serial(data)
+
+        #self.udp.sender(pack)
+        #print(pack)
+        text = ''
+        for i in range(len(unpack)) :
+            text += 'ch['+ str(i) + ']' + str(unpack[i])+'\n'
+        
+        self.ui.textEdit_2.setText(text)
+        self.update_servo_output_slider1(unpack)
+        self.udp.write(pack)
+   
+    def receive_from_serial2(self, data):
+        unpack, pack = self.serial2.parsing_data_from_serial(data)
+        self.udp.sender(pack)
+
+
+    def handelButton_2(self):
+       self.ui.pushButton_2.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogApplyButton')))
+       self.ui.pushButton_3.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogCancelButton')))
+    
+    def handelButton_3(self):
+       self.ui.pushButton_3.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogApplyButton')))
+       self.ui.pushButton_2.setIcon(self.style().standardIcon(getattr(QStyle, 'SP_DialogCancelButton')))
+    
+    def handelButton_4(self):
+       
+       port = self.ui.comboBox.currentText()
+       common.set_param(port)
+       self.ui.textEdit_4.setText('Param Set via port='+port)
+       
+    def open_serial_port(self):
+       pass
+    
+    def send_data_to_serial(self, data):
+       if self.serial1 != None:
+          self.serial1.send(data)
+       if self.serial2 != None:
+          self.serial2.send(data)
+          
+    def update_textedit(self, upack_data):
+      data = ''
+      
+      data += 'GPSt(sec) : {:.3f}\n'.format(upack_data[0]*1e-3)
+      data += 'Latitude : {:.7f}\n'.format(upack_data[1])
+      data += 'Longitude: {:.7f}\n'.format(upack_data[2])
+      data += 'Hgt(m)   : {:.3f}\n'.format(upack_data[3])
+      data += 'p(deg/s) : {:.3f}\n'.format(upack_data[4]*RAD2DEG)
+      data += 'q(deg/s) : {:.3f}\n'.format(upack_data[5]*RAD2DEG)
+      data += 'r(deg/s) : {:.3f}\n'.format(upack_data[6]*RAD2DEG)
+      data += 'Acc_x(N) : {:.3f}\n'.format(upack_data[7])
+      data += 'Acc_y(N) : {:.3f}\n'.format(upack_data[8])
+      data += 'Acc_z(N) : {:.3f}\n'.format(upack_data[9])
+      data += 'Velx(m/s): {:.3f}\n'.format(upack_data[10])
+      data += 'Vely(m/s): {:.3f}\n'.format(upack_data[11])
+      data += 'Velz(m/s): {:.3f}\n'.format(upack_data[12])
+      data += 'Roll(deg): {:.1f}\n'.format(upack_data[13]*RAD2DEG)
+      data += 'Pitch(deg): {:.1f}\n'.format(upack_data[14]*RAD2DEG)
+      data += 'Yaw(deg) : {:.1f}\n'.format(upack_data[15]*RAD2DEG)
+      data += 'baro(psc): {:.1f}\n'.format(upack_data[16])
+      data += 'Rotor(rpm): {:.1f}\n'.format(upack_data[17])
+      data += 'MegX(gauss): {:.3f}\n'.format(upack_data[18])
+      data += 'MegY(gauss): {:.3f}\n'.format(upack_data[19])
+      data += 'MegZ(gauss): {:.3f}'.format(upack_data[20])
+      self.ui.textEdit.setText(data)
+
+    def update_servo_output_slider1(self,servo_value):
+        self.ui.verticalSlider_1.setValue(servo_value[0])
+        self.ui.verticalSlider_2.setValue(servo_value[1])
+        self.ui.verticalSlider_3.setValue(servo_value[2])
+        self.ui.verticalSlider_4.setValue(servo_value[3])
+    
+    def update_servo_output_slider2(self,servo_value):
+        self.ui.verticalSlider_5.setValue(servo_value[0])
+        self.ui.verticalSlider_6.setValue(servo_value[1])
+        self.ui.verticalSlider_7.setValue(servo_value[2])
+        self.ui.verticalSlider_8.setValue(servo_value[3])
+
 
 
 if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    widget = HILS_FlightGear()
-    app.exec_()
+    app = QtWidgets.QApplication(sys.argv)
+    me = HILS_FlightGear()
+    sys.exit(app.exec_())
