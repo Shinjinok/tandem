@@ -34,7 +34,7 @@ from PyQt5 import uic
 import serial
 import serial.tools.list_ports
 import common
-
+import uavcan_common
 
 # python -m PyQt5.uic.pyuic -x mainwindow.ui -o mainwindow.py
 
@@ -53,10 +53,15 @@ class HILS_FlightGear(QtWidgets.QDialog):
        self.serial1 = None
        self.serial2 = None
        port1 , hwid1, port2, hwid2 = common.get_serial_port()
+       
       
        self.ui.label.setText(port1 + hwid1)
        self.serial1 = common.usbSerial(port1)
        self.serial1.packReady.connect(self.receive_from_serial1)
+       
+       self.ui.label.setText(port2 + hwid2)
+       self.serial2 = common.usbSerial(port2)
+       self.serial2.packReady.connect(self.receive_from_serial2)
        
        text, port_list = common.get_pixhawk_port()
        self.ui.textEdit_4.setText(text)
@@ -68,17 +73,29 @@ class HILS_FlightGear(QtWidgets.QDialog):
        self.pushButton_2.clicked.connect(self.handelButton_2)
        self.pushButton_3.clicked.connect(self.handelButton_3)
        self.pushButton_4.clicked.connect(self.handelButton_4)
+       self.pushButton_5.clicked.connect(self.handelButton_5)
        self.udp.intReady.connect(self.update_textedit)
        self.udp.packReady.connect(self.send_data_to_serial)
+       
        
     def closeEvent(self, event):
         
         self.udp.close()
+        self.can.close()
         self.serial1.close()
-        #self.serial2.close()
-
+        self.serial2.close()
+    def handelButton_5(self):
+       port = self.ui.comboBox.currentText()
+       self.can = uavcan_common.uavcan(port)
+       self.can.msgReady.connect(self.update_textEdit_5)
+       
+      
+      
+    def update_textEdit_5(self, msg):
+       self.ui.textEdit_5.setText(msg)
+       
     def handelButton_1(self):
-       """ port1 , hwid1, port2, hwid2 = common.get_serial_port()
+       """port1 , hwid1, port2, hwid2 = common.get_serial_port()
        if port1 != None:
          self.ui.label.setText(port1+hwid1)
          self.serial1 = common.usbSerial(port1)
@@ -103,17 +120,30 @@ class HILS_FlightGear(QtWidgets.QDialog):
 
         #self.udp.sender(pack)
         #print(pack)
-        text = ''
-        for i in range(len(unpack)) :
-            text += 'ch['+ str(i) + ']' + str(unpack[i])+'\n'
-        
-        self.ui.textEdit_2.setText(text)
-        self.update_servo_output_slider1(unpack)
-        self.udp.write(pack)
+        if unpack != None:
+            text = ''
+            for i in range(len(unpack)) :
+                  text += 'ch['+ str(i) + ']' + str(unpack[i])+'\n'
+            
+            self.ui.textEdit_2.setText(text)
+            self.update_servo_output_slider1(unpack)
+            self.udp.write(pack)
    
     def receive_from_serial2(self, data):
         unpack, pack = self.serial2.parsing_data_from_serial(data)
-        self.udp.sender(pack)
+
+        #self.udp.sender(pack)
+        #print(pack)
+        if unpack != None:
+            text = ''
+            for i in range(len(unpack)) :
+                  text += 'ch['+ str(i) + ']' + str(unpack[i])+'\n'
+            
+            self.ui.textEdit_3.setText(text)
+            self.update_servo_output_slider2(unpack)
+            #self.udp.write(pack)
+        
+
 
 
     def handelButton_2(self):

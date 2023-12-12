@@ -14,7 +14,7 @@ import dronekit
 Param = []
 Param.append(['AHRS_EKF_TYPE',11])
 Param.append(['EAHRS_TYPE', 3])
-Param.append(['EAHRS_RATE',50])
+Param.append(['EAHRS_RATE',1000]) #<-set 1000 for avoiding critical error 
 Param.append(['SERIAL2_PROTOCOL', 36])  
 Param.append(['SERIAL2_BAUD', 460]) #460800
 Param.append(['GPS_TYPE', 21]) #<--GPS_TYPE_EXTERNAL_AHRS = 21,
@@ -26,12 +26,13 @@ Param.append(['BRD_SAFETY_DEFLT', 0])
 Param.append(['ATC_RATE_Y_MAX', 10])
 Param.append(['INS_USE2', 0])
 Param.append(['INS_USE3', 0])
-Param.append(['INS_ENABLE_MASK', 1])
+Param.append(['INS_ENABLE_MASK', 3]) #<-set 3 for avoiding low loop late
+Param.append(['EK3_IMU_MASK', 1])
 Param.append(['H_COL_ANG_MIN', -5])
 Param.append(['H_COL_ANG_MAX', 16])
 Param.append(['RC_OPTIONS', 1])
 Param.append(['ATC_HOVR_ROL_TRM',0])
-Param.append(['CAN_SLCAN_CPORT', 1])
+Param.append(['CAN_SLCAN_CPORT', 0])
 
 Param.append(['ATC_ANG_PIT_P', 1.0])
 Param.append(['ATC_ANG_RLL_P', 1.0])
@@ -45,10 +46,17 @@ Param.append(['ATC_RAT_RLL_P', 1.0])
 Param.append(['ATC_RAT_YAW_D', 0.5])
 Param.append(['ATC_RAT_YAW_I', 0.01])
 Param.append(['ATC_RAT_YAW_P', 1.0])
+
+Param.append(['PSC_VELXY', 0.5])
+
+
 Param.append(['EK3_SRC1_POSXY', 3])
 Param.append(['EK3_SRC1_POSZ', 3])
 Param.append(['EK3_SRC1_VELXY', 3])
 Param.append(['EK3_SRC1_VELZ', 3])
+
+Param.append(['FLTMODE1', 5])
+Param.append(['FLTMODE6', 1])
 
 
 # RC_OPTION ignore rc receiver
@@ -77,6 +85,7 @@ def set_param(set_port):
 def set_param_thread():
   global port
   get = 'Parammeter Set:\n'
+  
   vehicle = dronekit.connect(port, wait_ready=True, baud=57600)
   for i in range(len(Param)):
     vehicle.parameters[Param[i][0]] = Param[i][1]
@@ -84,7 +93,9 @@ def set_param_thread():
     text_set = 'Pixhawk Parameter setting .. [' + str(i+1) + '/' +str(len(Param))+']'
     print(text_set)
   vehicle.reboot()
+  print('reboot pixhawk\n')
   vehicle.close()
+  print('Mavlink link close\n')
 
 
    
@@ -281,6 +292,8 @@ class usbSerial(QObject):
           send_data.append(float((2000.0 - float(a[3] )) / 1000.0))
           send_data.append(float((float(a[4] ) - 1500.0) / 500.0))
           send_pack= pack('>5f',send_data[0],send_data[1] ,send_data[2] ,send_data[3] ,send_data[2])
+        else:
+          return None, None
         
         return rcv_data, send_pack
     
