@@ -48,21 +48,9 @@ class HILS_FlightGear(QtWidgets.QDialog):
        self.ui = uic.loadUi("form.ui", self)
        self.ui.show()
 
-       self.port1 = None
-       self.port2 = None
-       self.serial1 = None
-       self.serial2 = None
-       port1 , hwid1, port2, hwid2 = common.get_serial_port()
        
-      
-       self.ui.label.setText(port1 + hwid1)
-       self.serial1 = common.usbSerial(port1)
-       self.serial1.packReady.connect(self.receive_from_serial1)
-       
-       self.ui.label.setText(port2 + hwid2)
-       self.serial2 = common.usbSerial(port2)
-       self.serial2.packReady.connect(self.receive_from_serial2)
-       
+       self.init_serial_ports()
+
        text, port_list = common.get_pixhawk_port()
        self.ui.textEdit_4.setText(text)
        for i in range(len(port_list)):
@@ -77,13 +65,30 @@ class HILS_FlightGear(QtWidgets.QDialog):
        self.udp.intReady.connect(self.update_textedit)
        self.udp.packReady.connect(self.send_data_to_serial)
        
+    def init_serial_ports(self):
+       self.port1 = None
+       self.port2 = None
+       self.serial1 = None
+       self.serial2 = None
+       port1 , hwid1, port2, hwid2 = common.get_serial_port()
        
+       self.port1 = port1
+       self.port2 = port2
+       if self.port1 != None:
+         self.ui.label.setText(port1 + hwid1)
+         self.serial1 = common.usbSerial(port1)
+         self.serial1.packReady.connect(self.receive_from_serial1)
+       if self.port2 != None:
+         self.ui.label.setText(port2 + hwid2)
+         self.serial2 = common.usbSerial(port2)
+         self.serial2.packReady.connect(self.receive_from_serial2)  
+
     def closeEvent(self, event):
-        
         self.udp.close()
         self.can.close()
         self.serial1.close()
         self.serial2.close()
+
     def handelButton_5(self):
        port = self.ui.comboBox.currentText()
        self.can = uavcan_common.uavcan(port)
@@ -164,6 +169,7 @@ class HILS_FlightGear(QtWidgets.QDialog):
        pass
     
     def send_data_to_serial(self, data):
+       
        if self.serial1 != None:
           self.serial1.send(data)
        if self.serial2 != None:

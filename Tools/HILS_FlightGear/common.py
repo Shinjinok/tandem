@@ -33,6 +33,7 @@ Param.append(['H_COL_ANG_MAX', 16])
 Param.append(['RC_OPTIONS', 1])
 Param.append(['ATC_HOVR_ROL_TRM',0])
 Param.append(['CAN_SLCAN_CPORT', 0])
+Param.append(['CAN_P1_DRIVER', 1])
 
 Param.append(['ATC_ANG_PIT_P', 1.0])
 Param.append(['ATC_ANG_RLL_P', 1.0])
@@ -47,8 +48,14 @@ Param.append(['ATC_RAT_YAW_D', 0.5])
 Param.append(['ATC_RAT_YAW_I', 0.01])
 Param.append(['ATC_RAT_YAW_P', 1.0])
 
-Param.append(['PSC_VELXY', 0.5])
-
+Param.append(['PSC_VELXY_D', 0.25])
+Param.append(['PSC_VELXY_P', 0.5])
+Param.append(['PSC_VELXY_I', 0.01])
+Param.append(['PSC_VELZ_D', 0.5])
+Param.append(['PSC_VELZ_P', 1.0])
+Param.append(['PSC_VELZ_I', 0.01])
+Param.append(['ATC_RATE_FF_ENAB', 0])
+Param.append(['PSC_POSXY_P', 2.0])
 
 Param.append(['EK3_SRC1_POSXY', 3])
 Param.append(['EK3_SRC1_POSZ', 3])
@@ -86,16 +93,19 @@ def set_param_thread():
   global port
   get = 'Parammeter Set:\n'
   
-  vehicle = dronekit.connect(port, wait_ready=True, baud=57600)
-  for i in range(len(Param)):
-    vehicle.parameters[Param[i][0]] = Param[i][1]
-    get += Param[i][0] + '=' + str(Param[i][1]) +'\n'
-    text_set = 'Pixhawk Parameter setting .. [' + str(i+1) + '/' +str(len(Param))+']'
-    print(text_set)
-  vehicle.reboot()
-  print('reboot pixhawk\n')
-  vehicle.close()
-  print('Mavlink link close\n')
+  try:
+    vehicle = dronekit.connect(port, wait_ready=True, baud=57600)
+    for i in range(len(Param)):
+      vehicle.parameters[Param[i][0]] = Param[i][1]
+      get += Param[i][0] + '=' + str(Param[i][1]) +'\n'
+      text_set = 'Pixhawk Parameter setting .. [' + str(i+1) + '/' +str(len(Param))+']'
+      print(text_set)
+    vehicle.reboot()
+    print('reboot pixhawk\n')
+    vehicle.close()
+    print('Mavlink link close\n')
+  except:
+     print(port + 'Paramerter Setup Fail, Try change port')
 
 
    
