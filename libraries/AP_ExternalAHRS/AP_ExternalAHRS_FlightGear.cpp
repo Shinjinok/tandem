@@ -275,9 +275,11 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
         AP_ExternalAHRS::ins_data_message_t ins;
         ins.accel = accel;
         ins.gyro = gyro;
-        ins.temperature = 30.0f;
+        ins.temperature = 25.0f;
         AP::ins().handle_external(ins);
     } 
+
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "eahra ms %f ",gyro.x,gyro.y,gyro.z);
 
 
     // @LoggerMessage: EAH1

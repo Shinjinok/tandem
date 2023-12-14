@@ -85,9 +85,9 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
 void AP_ExternalAHRS::init(void)
 {
-    if (rate.get() < 20) {
-        // min 20Hz
-        rate.set(20);
+    if (rate.get() < 50) {
+        // min 50Hz
+        rate.set(50);
     }
 
     switch (DevType(devtype)) {

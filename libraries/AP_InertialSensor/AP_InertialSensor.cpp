@@ -1379,6 +1379,7 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
 {
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         if (!get_gyro_health(i)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro count %d fail %d ", get_gyro_count(), i);
             return false;
         }
     }
@@ -1773,6 +1774,9 @@ void AP_InertialSensor::update(void)
         }
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
+
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "i %d gyr %d acc %d deV %d deA %d",
+            i,_gyro_healthy[i], _accel_healthy[i], _delta_velocity_valid[i], _delta_angle_valid[i] );
         }
 
         if (!_startup_error_counts_set) {

@@ -438,7 +438,7 @@ bool AP_Arming::ins_checks(bool report)
     if (check_enabled(ARMING_CHECK_INS)) {
         const AP_InertialSensor &ins = AP::ins();
         if (!ins.get_gyro_health_all()) {
-            check_failed(ARMING_CHECK_INS, report, "Gyros not healthy");
+            check_failed(ARMING_CHECK_INS, report, "^^Gyros not healthy");
             return false;
         }
         if (!ins.gyro_calibrated_ok_all()) {
