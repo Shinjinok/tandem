@@ -2,7 +2,7 @@
 #include "AP_InertialSensor_ExternalAHRS.h"
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
 #include <stdio.h>
-
+#include <GCS_MAVLink/GCS.h>
 #if HAL_EXTERNAL_AHRS_ENABLED
 
 const extern AP_HAL::HAL& hal;
@@ -38,6 +38,8 @@ bool AP_InertialSensor_ExternalAHRS::update(void)
         update_accel(accel_instance);
         update_gyro(gyro_instance);
     }
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update  started %d", started);
+
     return started;
 }
 

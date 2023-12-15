@@ -747,7 +747,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
         _gyro_id(_gyro_count).save();
     }
 #endif
-
+  
     instance = _gyro_count++;
 
     return true;
@@ -773,6 +773,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else if ((uint32_t)_accel_id(_accel_count) != id) {
+        
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else {
@@ -787,7 +788,16 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
         _accel_id_ok[_accel_count] = true;
         _accel_id(_accel_count).save();
 #endif
-
+#if HAL_EXTERNAL_AHRS_ENABLED
+        // assume this is the same sensor and save its ID to allow seamless
+        // transition from when we didn't have the IDs.
+        _accel_id_ok[_accel_count] = true;
+        _accel_id(_accel_count).save();
+        _accel_offset(_accel_count).set_and_save(Vector3f(1e-6,1e-6,1e-6));
+        _accel_scale(_accel_count).set_and_save(Vector3f(1,1,1));
+        
+#endif
+  
     instance = _accel_count++;
     return true;
 }
@@ -1379,7 +1389,7 @@ bool AP_InertialSensor::get_gyro_health_all(void) const
 {
     for (uint8_t i=0; i<get_gyro_count(); i++) {
         if (!get_gyro_health(i)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro count %d fail %d ", get_gyro_count(), i);
+         //   GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro count %d fail %d ", get_gyro_count(), i);
             return false;
         }
     }
@@ -1506,22 +1516,30 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
     // check each accelerometer has offsets saved
     for (uint8_t i=0; i<get_accel_count(); i++) {
         if (!_accel_id_ok[i]) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"IMU _accel_id_not_ok %d",i);
             return false;
         }
+        
         // exactly 0.0 offset is extremely unlikely
         if (_accel_offset(i).get().is_zero()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"_accel_offset(i).get().is_zero()%d",i);
             return false;
         }
+        
         // zero scaling also indicates not calibrated
         if (_accel_scale(i).get().is_zero()) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"_accel_scale(i).get().is_ zero()%d",i);
             return false;
         }
+        
     }
     for (uint8_t i=get_accel_count(); i<INS_MAX_INSTANCES; i++) {
         if (_accel_id(i) != 0) {
             // missing accel
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"missing accel %d",i);
             return false;
         }
+        
     }
     
     // check calibrated accels matches number of accels (no unused accels should have offsets or scaling)
@@ -1531,8 +1549,10 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
             bool have_scaling = (!is_zero(scaling.x) && !is_equal(scaling.x,1.0f)) || (!is_zero(scaling.y) && !is_equal(scaling.y,1.0f)) || (!is_zero(scaling.z) && !is_equal(scaling.z,1.0f));
             bool have_offsets = !_accel_offset(i).get().is_zero();
             if (have_scaling || have_offsets) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"not have_scaling || not have_offsets %d",i);
                 return false;
             }
+            
         }
     }
 
@@ -1775,8 +1795,8 @@ void AP_InertialSensor::update(void)
         for (uint8_t i=0; i<_backend_count; i++) {
             _backends[i]->update();
 
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "i %d gyr %d acc %d deV %d deA %d",
-            i,_gyro_healthy[i], _accel_healthy[i], _delta_velocity_valid[i], _delta_angle_valid[i] );
+            //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "i %d gyr %d acc %d deV %d deA %d",
+           // i,_gyro_healthy[i], _accel_healthy[i], _delta_velocity_valid[i], _delta_angle_valid[i] );
         }
 
         if (!_startup_error_counts_set) {

@@ -101,7 +101,7 @@ bool AP_ExternalAHRS_FlightGear::check_uart()
     if (!setup_complete) {
         return false;
     }
-    WITH_SEMAPHORE(state.sem);
+    //WITH_SEMAPHORE(state.sem);
 
     uint32_t n = uart->available();
  
@@ -148,6 +148,33 @@ bool AP_ExternalAHRS_FlightGear::check_uart()
         wp =  remain;
         match_header1 = false;
     }
+
+    #if AP_BARO_EXTERNALAHRS_ENABLED
+    {
+        AP_ExternalAHRS::baro_data_message_t baro;
+        baro.instance = 0;
+        baro.pressure_pa = pressure_pa;
+        baro.temperature = 25.0f;
+        //uart->printf("baro %f\n",pkt1.pressure_pascal);
+        AP::baro().handle_external(baro);
+    } 
+    #endif
+
+    #if AP_COMPASS_EXTERNALAHRS_ENABLED
+        {
+            AP_ExternalAHRS::mag_data_message_t mag;
+            mag.field = pkt1_mag;
+            AP::compass().handle_external(mag);
+        } 
+    #endif 
+
+    {
+        AP_ExternalAHRS::ins_data_message_t ins;
+        ins.accel = accel;
+        ins.gyro = gyro;
+        ins.temperature = 25.0f;
+        AP::ins().handle_external(ins);
+    } 
 
     return true;
 }
@@ -198,8 +225,10 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     int32_t lon = pkt1.lat_lon[1] * 1.0e7;
     int32_t alt = pkt1.alt_m * 1.0e2;
     Location loc = Location{lat,lon,alt,Location::AltFrame::ABSOLUTE};
-    Vector3f accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
-    Vector3f gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
+    accel = Vector3f{pkt1.pilot_accel_swu_xyz_mps[0], pkt1.pilot_accel_swu_xyz_mps[1], pkt1.pilot_accel_swu_xyz_mps[2]};
+    gyro = Vector3f{pkt1.pqr_rad[0], pkt1.pqr_rad[1], pkt1.pqr_rad[2]};
+    pkt1_mag = Vector3f(pkt1.mag[0],pkt1.mag[1],pkt1.mag[2]);
+    pressure_pa = pkt1.pressure_pascal;
     Vector3f velocity = Vector3f{pkt1.speed_ned_mps[0], pkt1.speed_ned_mps[1], pkt1.speed_ned_mps[2]};
     Quaternion quat;
     quat.from_euler(pkt1.rpy_rad[0], pkt1.rpy_rad[1], pkt1.rpy_rad[2]);
@@ -252,32 +281,9 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 
 
 
-#if AP_BARO_EXTERNALAHRS_ENABLED
-    {
-        AP_ExternalAHRS::baro_data_message_t baro;
-        baro.instance = 0;
-        baro.pressure_pa = pkt1.pressure_pascal;
-        baro.temperature = 25.0f;
-        //uart->printf("baro %f\n",pkt1.pressure_pascal);
-        AP::baro().handle_external(baro);
-    } 
-#endif
 
-#if AP_COMPASS_EXTERNALAHRS_ENABLED
-     {
-        AP_ExternalAHRS::mag_data_message_t mag;
-        mag.field = Vector3f{pkt1.mag[0], pkt1.mag[1], pkt1.mag[2]};
-        AP::compass().handle_external(mag);
-    } 
-#endif 
 
-   {
-        AP_ExternalAHRS::ins_data_message_t ins;
-        ins.accel = accel;
-        ins.gyro = gyro;
-        ins.temperature = 25.0f;
-        AP::ins().handle_external(ins);
-    } 
+   
 
     //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "eahra ms %f ",gyro.x,gyro.y,gyro.z);
 
@@ -418,10 +424,10 @@ void AP_ExternalAHRS_FlightGear::send_status_report(GCS_MAVLINK &link) const
     }
 
     // send message
-    const float vel_gate = 20; // represents hz value data is posted at
-    const float pos_gate = 20; // represents hz value data is posted at
-    const float hgt_gate = 20; // represents hz value data is posted at
-    const float mag_var = 0; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
+    const float vel_gate = 10; // represents hz value data is posted at
+    const float pos_gate = 10; // represents hz value data is posted at
+    const float hgt_gate = 10; // represents hz value data is posted at
+    const float mag_var = 10; //we may need to change this to be like the other gates, set to 0 because mag is ignored by the ins filter in vectornav
     mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
                                        0.01/vel_gate, 
                                        0.01/pos_gate, 

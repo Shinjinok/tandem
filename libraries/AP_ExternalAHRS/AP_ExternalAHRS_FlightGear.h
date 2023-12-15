@@ -99,6 +99,12 @@ private:
         uint8_t register_number;  // FlightGear register number were reading
     } nmea;
 
+    Vector3f gyro={0.0,0.0,0.0};
+    Vector3f accel={0.0,0.0,0.0};
+    Vector3f pkt1_mag={0.0,0.0,0.0};
+    float pressure_pa = 0.0;
+
+
 };
 
 #endif  // AP_EXTERNAL_AHRS_FLIGHTGEAR_ENABLED

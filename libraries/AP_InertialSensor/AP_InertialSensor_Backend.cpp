@@ -71,7 +71,7 @@ void AP_InertialSensor_Backend::_update_sensor_rate(uint16_t &count, uint32_t &s
         if (now - start_us > 1000000UL) {
             float observed_rate_hz = count * 1.0e6f / (now - start_us);
 #if 0
-            printf("IMU RATE: %.1f should be %.1f\n", observed_rate_hz, rate_hz);
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"IMU RATE: %f should be %f", observed_rate_hz, rate_hz);
 #endif
             float filter_constant = 0.98f;
             float upper_limit = 1.05f;
@@ -177,9 +177,7 @@ void AP_InertialSensor_Backend::_publish_gyro(uint8_t instance, const Vector3f &
     _imu._delta_angle_acc[instance].zero();
     _imu._delta_angle_acc_dt[instance] = 0;
 
-/*     if(instance==0){
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "_publish_gyro %f %f %f",gyro.x,gyro.y,gyro.z);
-    } */
+    //if(instance==0){ GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "_publish_gyro %f %f %f",gyro.x,gyro.y,gyro.z);}
 }
 
 
@@ -763,6 +761,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
     }
     if (_imu._new_gyro_data[instance]) {
         _publish_gyro(instance, _imu._gyro_filtered[instance]);
+         
        
 #if HAL_GYROFFT_ENABLED
         // copy the gyro samples from the backend to the frontend window for FFTs sampling at less than IMU rate
@@ -773,7 +772,7 @@ void AP_InertialSensor_Backend::update_gyro(uint8_t instance) /* front end */
 
     // possibly update filter frequency
     const float gyro_rate = _gyro_raw_sample_rate(instance);
-
+     //if(instance==0){ GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "gyro rate %f",gyro_rate); }
     if (_last_gyro_filter_hz != _gyro_filter_cutoff() || sensors_converging()) {
         _imu._gyro_filter[instance].set_cutoff_frequency(gyro_rate, _gyro_filter_cutoff());
 #if HAL_GYROFFT_ENABLED
