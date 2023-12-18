@@ -1880,6 +1880,7 @@ void AP_Arming::check_forced_logging(const AP_Arming::Method method)
     }
 }
 
+
 AP_Arming *AP_Arming::_singleton = nullptr;
 
 /*

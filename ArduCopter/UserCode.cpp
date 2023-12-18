@@ -40,6 +40,11 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
+    AP_Arming *ap_arming = AP_Arming::get_singleton();
+   
+    uint32_t time = ap_arming->get_can_last_update_time();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "can update_time %ld", time);
+
 }
 #endif
 

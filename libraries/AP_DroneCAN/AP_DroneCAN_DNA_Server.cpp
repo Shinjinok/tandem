@@ -17,7 +17,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
-//#define HAL_ENABLE_DRONECAN_DRIVERS 1
+#define HAL_ENABLE_DRONECAN_DRIVERS 1
 #if HAL_ENABLE_DRONECAN_DRIVERS
 
 #include "AP_DroneCAN_DNA_Server.h"
@@ -28,7 +28,10 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <stdio.h>
+#include <AP_Arming/AP_Arming.h>
+
 extern const AP_HAL::HAL& hal;
+
 
 #define NODEDATA_MAGIC 0xAC01
 #define NODEDATA_MAGIC_LEN 2
@@ -276,6 +279,11 @@ bool AP_DroneCAN_DNA_Server::init(uint8_t own_unique_id[], uint8_t own_unique_id
     setVerificationMask(node_id);
     node_healthy_mask.set(node_id);
     self_node_id = node_id;
+
+    uint32_t time = AP_HAL::millis();
+    AP_Arming *ap_arming = AP_Arming::get_singleton();
+
+    ap_arming->set_can_last_update_time(time);
     return true;
 }
 
@@ -423,6 +431,14 @@ void AP_DroneCAN_DNA_Server::handleNodeStatus(const CanardRxTransfer& transfer, 
     }
     //Add node to seen list if not seen before
     addToSeenNodeMask(transfer.source_node_id);
+
+    if(transfer.source_node_id == 11 || transfer.source_node_id == 10){
+        uint32_t time = AP_HAL::millis();
+        AP_Arming *ap_arming = AP_Arming::get_singleton();
+        ap_arming->set_can_last_update_time(time);
+        msg.health;
+    }
+
 }
 
 /* Node Info message handler

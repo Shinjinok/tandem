@@ -10,6 +10,8 @@
 class AP_Arming {
 public:
 
+    
+
     AP_Arming();
 
     CLASS_NO_COPY(AP_Arming);  /* Do not allow copies */
@@ -96,6 +98,10 @@ public:
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
+
+    uint32_t can_last_update_time;
+    void set_can_last_update_time(uint32_t time) {can_last_update_time = time;};
+    uint32_t get_can_last_update_time()const {return can_last_update_time;};
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;
