@@ -98,10 +98,15 @@ public:
     virtual bool disarm(AP_Arming::Method method, bool do_disarm_checks=true);
     bool is_armed() const;
     bool is_armed_and_safety_off() const;
-
-    uint32_t can_last_update_time;
-    void set_can_last_update_time(uint32_t time) {can_last_update_time = time;};
-    uint32_t get_can_last_update_time()const {return can_last_update_time;};
+    struct{
+        uint32_t last_update_time;
+        uint8_t my_id;
+        uint8_t received_health;
+        uint8_t received_mode;
+        bool alive;
+    }can;
+    //void set_can_last_update_time(uint32_t time) {can.last_update_time = time;};
+    //uint32_t get_can_last_update_time()const {return can.last_update_time;};
 
     // get bitmask of enabled checks
     uint32_t get_enabled_checks() const;

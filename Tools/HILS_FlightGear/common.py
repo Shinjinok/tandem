@@ -144,7 +144,7 @@ def get_serial_port():
         print("Not found")
       try:
         ser = 'SER=0002'
-        hwid.index('USB VID:PID=10C4:EA60 SER=0002')
+        hwid.index(ser)
         hwid2 = '['+ ser+']'
         port2 = port
         print("{}: {} [{}]".format(port, desc, hwid))
@@ -169,6 +169,7 @@ class udp_socket(QObject):
 
     self.port = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.port.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    self.port.settimeout(1)
     self.port.bind((a[0], int(a[1])))
     self.destination_addr = (a[0], int(a[2]))
     self.udp_data_in = None
@@ -189,16 +190,22 @@ class udp_socket(QObject):
 
   def close(self):
      self.thread_run = False
+     print("udp close")
 
   def listen_clients(self):
     print(self.destination_addr, " start thread\n")
-    time.sleep(0.1)
+    time.sleep(1)
     while self.thread_run:
-        data_udp ,addr= self.port.recvfrom(1024)
-        unpack_data = self.unpacking_data(data_udp)
-        d = self.packing_data(unpack_data)
-        self.packReady.emit(d)
-        self.intReady.emit(unpack_data)
+        try:
+          data_udp ,addr= self.port.recvfrom(1024)
+        except socket.timeout:
+          continue  
+        if(len(data_udp) > 0):
+          unpack_data = self.unpacking_data(data_udp)
+          d = self.packing_data(unpack_data)
+          self.packReady.emit(d)
+          self.intReady.emit(unpack_data)
+          time.sleep(0.01)
     
     print('udp thread stop\n')
 

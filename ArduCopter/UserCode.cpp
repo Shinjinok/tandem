@@ -41,9 +41,39 @@ void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
     AP_Arming *ap_arming = AP_Arming::get_singleton();
-   
-    uint32_t time = ap_arming->get_can_last_update_time();
-    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "can update_time %ld", time);
+    uint32_t current_time = AP_HAL::millis();
+    
+    const char* health = "";
+    if(current_time - ap_arming->can.last_update_time > 1500 ) {
+        ap_arming->can.alive = false;
+    }
+    else{
+        ap_arming->can.alive = true;
+        if (ap_arming->can.received_health == 0){
+            health = "Ok";
+        }
+        else{
+            health = "Bad";
+        }
+        
+    }
+
+   if (ap_arming->can.my_id == 10){
+        if(ap_arming->can.alive){
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "This is PFC, get SFC health %s",health);
+        }
+        else{
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "This is PFC, SFC dead");
+        }
+   }
+   if (ap_arming->can.my_id == 11){
+        if(ap_arming->can.alive){
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "This is SFC, get PFC health %s",health);
+        }
+        else{
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "This is SFC, PFC dead");
+        }
+   }
 
 }
 #endif

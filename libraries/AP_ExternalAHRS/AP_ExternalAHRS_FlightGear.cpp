@@ -35,6 +35,7 @@
 #include <AP_Common/NMEA.h>
 #include <stdio.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AP_Arming/AP_Arming.h>
 
 
 extern const AP_HAL::HAL &hal;
@@ -207,11 +208,17 @@ const char* AP_ExternalAHRS_FlightGear::get_name() const
  */
 void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 {
-
-    uint16_t values[8] {};
-    hal.rcout->read(values, 8);
-    uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
-    
+    AP_Arming *ap_arming = AP_Arming::get_singleton();
+    if(ap_arming->can.alive && ap_arming->can.my_id == 10){
+        uint16_t values[8] {};
+        hal.rcout->read(values, 8);
+        uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+    }
+    if(!ap_arming->can.alive && ap_arming->can.my_id == 11){
+        uint16_t values[8] {};
+        hal.rcout->read(values, 8);
+        uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+    }
     //uart->write((const uint8_t *) &values[0],sizeof(values));
     //uart->printf("\n");
 
