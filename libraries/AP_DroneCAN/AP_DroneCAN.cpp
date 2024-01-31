@@ -385,11 +385,12 @@ void AP_DroneCAN::loop(void)
 
         canard_iface.process(1);
 
- /*       safety_state_send();
-         notify_state_send();
+        fc_state_send();
+        safety_state_send();
+        notify_state_send();
         check_parameter_callback_timeout();
         send_parameter_request();
-        send_parameter_save_request();*/
+        send_parameter_save_request();
         send_node_status(); 
         _dna_server.verify_nodes();
 
@@ -1096,6 +1097,23 @@ void AP_DroneCAN::safety_state_send()
                                                       UAVCAN_EQUIPMENT_SAFETY_ARMINGSTATUS_STATUS_DISARMED;
         arming_status.broadcast(arming_msg);
     }
+}
+
+// FcState send
+void AP_DroneCAN::fc_state_send()
+{
+    uint32_t now = AP_HAL::millis();
+    if (now - _last_fc_state_ms < 500) {
+        // update at 2Hz
+        return;
+    }
+    _last_fc_state_ms = now;
+
+    ardupilot_indication_FcState fc_msg;
+    fc_msg.mode = ARDUPILOT_INDICATION_FCSTATE_VEHICLE_STATE_ARMED;
+    fc_msg.flags = ARDUPILOT_INDICATION_FCSTATE_VEHICLE_STATE_EKF_BAD;
+    fc_state.broadcast(fc_msg);
+    
 }
 
 /*

@@ -159,6 +159,8 @@ private:
     // SafetyState
     void safety_state_send();
 
+    void fc_state_send();
+
     // send notify vehicle state
     void notify_state_send();
 
@@ -245,6 +247,9 @@ private:
     // safety status send state
     uint32_t _last_safety_state_ms;
 
+    // safety status send state
+    uint32_t _last_fc_state_ms;
+
     // notify vehicle state
     uint32_t _last_notify_state_ms;
     uavcan_protocol_NodeStatus node_status_msg;
@@ -257,6 +262,7 @@ private:
     Canard::Publisher<uavcan_equipment_actuator_ArrayCommand> act_out_array{canard_iface};
     Canard::Publisher<uavcan_equipment_esc_RawCommand> esc_raw{canard_iface};
     Canard::Publisher<ardupilot_indication_SafetyState> safety_state{canard_iface};
+    Canard::Publisher<ardupilot_indication_FcState> fc_state{canard_iface};
     Canard::Publisher<uavcan_equipment_safety_ArmingStatus> arming_status{canard_iface};
     Canard::Publisher<ardupilot_indication_NotifyState> notify_state{canard_iface};
 
