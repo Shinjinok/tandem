@@ -277,6 +277,9 @@ private:
     Canard::Publisher<ardupilot_gnss_Status> gnss_status{canard_iface};
 #endif
     // incoming messages
+    Canard::ObjCallback<AP_DroneCAN, ardupilot_indication_FcState> fc_state_cb{this, &AP_DroneCAN::handle_fc_state};
+    Canard::Subscriber<ardupilot_indication_FcState> fc_state_listener{fc_state_cb, _driver_index};
+
     Canard::ObjCallback<AP_DroneCAN, ardupilot_indication_Button> safety_button_cb{this, &AP_DroneCAN::handle_button};
     Canard::Subscriber<ardupilot_indication_Button> safety_button_listener{safety_button_cb, _driver_index};
 
@@ -345,6 +348,7 @@ private:
 #endif
     
     // incoming button handling
+    void handle_fc_state(const CanardRxTransfer& transfer, const ardupilot_indication_FcState& msg);
     void handle_button(const CanardRxTransfer& transfer, const ardupilot_indication_Button& msg);
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);

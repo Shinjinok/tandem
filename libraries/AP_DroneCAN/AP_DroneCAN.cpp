@@ -1137,6 +1137,12 @@ void AP_DroneCAN::handle_button(const CanardRxTransfer& transfer, const ardupilo
     }
 }
 
+void AP_DroneCAN::handle_fc_state(const CanardRxTransfer& transfer, const ardupilot_indication_FcState& msg)
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "ardupilot_indication_FcState");
+}
+
+
 /*
   handle traffic report
  */
