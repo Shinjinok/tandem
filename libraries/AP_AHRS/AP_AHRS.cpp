@@ -346,7 +346,7 @@ void AP_AHRS::update(bool skip_ins_update)
     if(count++ > 399){
         uint32_t t_now = AP_HAL::millis();
         if(t_now-last_time > 1100){
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "one_hz_loop: %ld ms", t_now-last_time);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "one_hz_loop: %d ms", t_now-last_time);
         }
         last_time = t_now;
         count =0;

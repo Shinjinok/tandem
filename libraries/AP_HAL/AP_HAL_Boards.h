@@ -124,6 +124,7 @@
  * - HAL_OS_SOCKETS  : has posix-like sockets */
 
 /* DEFINITIONS FOR BOARDS */
+#define CONFIG_HAL_BOARD    HAL_BOARD_SITL
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     #include <AP_HAL/board/sitl.h>

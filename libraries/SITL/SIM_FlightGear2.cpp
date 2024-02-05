@@ -132,18 +132,21 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
                     pkt.g_packet.pqr_rad[1],
                     pkt.g_packet.pqr_rad[2]);
 
-    velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
-                           pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
-                           pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
+    
     
  //   float roll,pitch,yaw;
  //   dcm.to_euler(&roll,&pitch,&yaw);
+    if(gps_count++ > 3){
+        velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
+                           pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
+                           pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
+        location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
+        location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
+        location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
 
-    location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
-    location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
-    location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
-
-    position = origin.get_distance_NED_double(location);
+        position = origin.get_distance_NED_double(location);
+        gps_count = 0;
+    }
    // Vector3d home_pos = origin.get_distance_NED_double(home);
 
      // compute dcm from imu orientation
@@ -221,7 +224,7 @@ void FlightGear2::update(const struct sitl_input &input)
     recv_fdm(input);
     //extrapolate_sensors(0.001);       // don't go past the nex);
     
-    //update_position();
+    update_position();
 
     time_advance();
     // update magnetic field

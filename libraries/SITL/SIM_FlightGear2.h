@@ -117,7 +117,7 @@ namespace SITL {
       static const uint64_t FlightGear2_TIMEOUT_US = 5000000;
 
       float ch[4]={0.0,0.0,0.0,0.0};
-      int count = 0;
+      int gps_count = 0;
   };
 
 }  // namespace SITL
