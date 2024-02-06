@@ -343,14 +343,13 @@ void AP_AHRS::update_state(void)
 
 void AP_AHRS::update(bool skip_ins_update)
 {
-    if(count++ > 399){
-        uint32_t t_now = AP_HAL::millis();
-        if(t_now-last_time > 1100){
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "one_hz_loop: %d ms", t_now-last_time);
-        }
-        last_time = t_now;
-        count =0;
-    } 
+    uint32_t t_now = AP_HAL::millis();
+
+    if(t_now - last_time > 1000){
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "One Hz loop: %d ms", t_now - last_time);
+    }
+    last_time = t_now;
+
     // periodically checks to see if we should update the AHRS
     // orientation (e.g. based on the AHRS_ORIENTATION parameter)
     // allow for runtime change of orientation

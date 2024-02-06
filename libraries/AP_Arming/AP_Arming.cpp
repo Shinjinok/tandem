@@ -627,12 +627,13 @@ bool AP_Arming::gps_checks(bool report)
                 check_failed(ARMING_CHECK_GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }
-
+            
             //GPS update rate acceptable
             if (!gps.is_healthy(i)) {
                 check_failed(ARMING_CHECK_GPS, report, "GPS %i: not healthy^^", i+1);
                 return false;
             }
+            
         }
 
         if (!AP::ahrs().home_is_set()) {

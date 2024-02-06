@@ -118,7 +118,7 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
     }
 
     const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
-
+   
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;
         return;
@@ -136,17 +136,16 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
     
  //   float roll,pitch,yaw;
  //   dcm.to_euler(&roll,&pitch,&yaw);
-    if(gps_count++ > 3){
-        velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
-                           pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
-                           pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
-        location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
-        location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
-        location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
 
-        position = origin.get_distance_NED_double(location);
-        gps_count = 0;
-    }
+    velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
+                        pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
+                        pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
+    location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
+    location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
+    location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
+
+    position = origin.get_distance_NED_double(location);
+
    // Vector3d home_pos = origin.get_distance_NED_double(home);
 
      // compute dcm from imu orientation
@@ -183,7 +182,7 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
    
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
-    if (deltat < 0.001 && deltat > 0) {
+    if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
     
@@ -222,8 +221,6 @@ void FlightGear2::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
-    //extrapolate_sensors(0.001);       // don't go past the nex);
-    
     update_position();
 
     time_advance();

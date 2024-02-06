@@ -19,7 +19,7 @@
 
 #include "SITL.h"
 
-#define AP_SIM_ENABLED 1
+
 #if AP_SIM_ENABLED
 
 #include <AP_Common/AP_Common.h>

@@ -554,7 +554,7 @@ bool AP_Arming_Copter::alt_checks(bool display_failure)
 {
     // always EKF altitude estimate
     if (!copter.flightmode->has_manual_throttle() && !copter.ekf_alt_ok()) {
-        check_failed(display_failure, "Need Alt Estimate");
+        check_failed(display_failure, "Need Alt Estimate %d",copter.ekf_alt_ok());
         return false;
     }
 
