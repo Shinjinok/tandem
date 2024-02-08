@@ -118,6 +118,7 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
     }
 
     const double deltat = pkt.g_packet.timestamp - last_timestamp;  // in seconds
+    //printf("flight gear update delta t: %f\n",deltat);
    
     if (deltat < 0) {  // don't use old packet
         time_now_us += 1;

@@ -525,7 +525,7 @@ const AP_Param::GroupInfo SIM::var_gps[] = {
     // @DisplayName: GPS 1 Hz
     // @Description: GPS 1 Update rate
     // @Units: Hz
-    AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  5),
+    AP_GROUPINFO("GPS_HZ",         7, SIM,  gps_hertz[0],  10),
     // @Param: GPS_DRIFTALT
     // @DisplayName: GPS 1 Altitude Drift
     // @Description: GPS 1 altitude drift error

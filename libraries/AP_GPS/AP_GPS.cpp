@@ -802,8 +802,10 @@ AP_GPS_Backend *AP_GPS::_detect_instance(uint8_t instance)
         return new AP_GPS_NOVA(*this, state[instance], _port[instance]);
 #endif //AP_GPS_NOVA_ENABLED
 
+
 #if HAL_SIM_GPS_ENABLED
     case GPS_TYPE_SITL:
+        printf("detect GPS_TYPE_SITL ");
         return new AP_GPS_SITL(*this, state[instance], _port[instance]);
 #endif  // HAL_SIM_GPS_ENABLED
 
@@ -922,6 +924,7 @@ void AP_GPS::update_instance(uint8_t instance)
 {
     if (_type[instance] == GPS_TYPE_HIL ) {
         // in HIL, leave info alone
+        printf("GPS_TYPE_HIL\n");
         return;
     }
     if (_type[instance] == GPS_TYPE_NONE) {
@@ -929,10 +932,12 @@ void AP_GPS::update_instance(uint8_t instance)
         state[instance].status = NO_GPS;
         state[instance].hdop = GPS_UNKNOWN_DOP;
         state[instance].vdop = GPS_UNKNOWN_DOP;
+        printf("GPS_TYPE_NONE\n");
         return;
-    }
+    } 
     if (locked_ports & (1U<<instance)) {
         // the port is locked by another driver
+        printf("locked_ports & (1U<<instance\n");
         return;
     }
 
@@ -940,18 +945,21 @@ void AP_GPS::update_instance(uint8_t instance)
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
         detect_instance(instance);
+        printf("drivers[instance] == nullptr\n");
         return;
     }
 
     if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         send_blob_update(instance);
+        printf("_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY \n");
     }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
     
     uint32_t tnow = AP_HAL::millis();
-
+    
+    printf("AP GPS CPP delta t: %d\n",timing[instance].delta_time_ms);
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
@@ -993,6 +1001,8 @@ void AP_GPS::update_instance(uint8_t instance)
         // delta will only be correct after parsing two messages
         timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
         timing[instance].last_message_time_ms = tnow;
+        
+        
         // if GPS disabled for flight testing then don't update fix timing value
         if (state[instance].status >= GPS_OK_FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
@@ -1022,7 +1032,7 @@ void AP_GPS::update_instance(uint8_t instance)
 
     if (data_should_be_logged) {
         // keep count of delayed frames and average frame delay for health reporting
-        const uint16_t gps_max_delta_ms = 500;//245; // 200 ms (5Hz) + 45 ms buffer
+        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
         GPS_timing &t = timing[instance];
 
         if (t.delta_time_ms > gps_max_delta_ms) {
@@ -2150,7 +2160,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
-        //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "t.delayed_count %d",t.delayed_count);
+        //printf("t.delayed_count %d %f %f",t.delayed_count,t.average_delta_ms,delay_avg_max);
     if (!delay_ok) {
         return false;
     }

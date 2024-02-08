@@ -787,7 +787,7 @@ private:
     void Write_GPS(uint8_t instance);
 
     uint32_t last_time_ms = 0;
-
+    uint32_t oldtnow;  
 };
 
 namespace AP {
