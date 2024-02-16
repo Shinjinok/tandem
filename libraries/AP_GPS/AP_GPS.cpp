@@ -485,6 +485,7 @@ void AP_GPS::init(const AP_SerialManager& serial_manager)
         if (_rate_ms[i] <= 0 || _rate_ms[i] > GPS_MAX_RATE_MS) {
             _rate_ms[i].set(GPS_MAX_RATE_MS);
         }
+        //printf("_rate_ms[%d]= %d\n",(int) i,(int) _rate_ms[i]);
     }
 }
 
@@ -666,10 +667,12 @@ void AP_GPS::send_blob_update(uint8_t instance)
 {
     // exit immediately if no uart for this instance
     if (_port[instance] == nullptr) {
+       // printf("send_blob_update_port[instance] == nullptr %d\n",instance);
         return;
     }
 
     if (initblob_state[instance].remaining == 0) {
+       // printf("initblob_state[instance].remaining == 0 , %d\n",instance);
         return;
     }
 
@@ -924,7 +927,7 @@ void AP_GPS::update_instance(uint8_t instance)
 {
     if (_type[instance] == GPS_TYPE_HIL ) {
         // in HIL, leave info alone
-        printf("GPS_TYPE_HIL\n");
+        //printf("GPS_TYPE_HIL\n");
         return;
     }
     if (_type[instance] == GPS_TYPE_NONE) {
@@ -932,12 +935,12 @@ void AP_GPS::update_instance(uint8_t instance)
         state[instance].status = NO_GPS;
         state[instance].hdop = GPS_UNKNOWN_DOP;
         state[instance].vdop = GPS_UNKNOWN_DOP;
-        printf("GPS_TYPE_NONE\n");
+        //printf("GPS_TYPE_NONE instance %d\n",instance);
         return;
     } 
     if (locked_ports & (1U<<instance)) {
         // the port is locked by another driver
-        printf("locked_ports & (1U<<instance\n");
+        //printf("locked_ports & (1U<<instance\n");
         return;
     }
 
@@ -945,21 +948,20 @@ void AP_GPS::update_instance(uint8_t instance)
         // we don't yet know the GPS type of this one, or it has timed
         // out and needs to be re-initialised
         detect_instance(instance);
-        printf("drivers[instance] == nullptr\n");
+       // printf("drivers[instance] == nullptr %d\n",instance);
         return;
     }
 
     if (_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY) {
         send_blob_update(instance);
-        printf("_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY \n");
+       // printf("_auto_config >= GPS_AUTO_CONFIG_ENABLE_SERIAL_ONLY %d\n",instance);
     }
 
     // we have an active driver for this instance
     bool result = drivers[instance]->read();
-    
+     //printf("_result = drivers[instance]->read() %d , %d\n",instance,result);
     uint32_t tnow = AP_HAL::millis();
     
-    printf("AP GPS CPP delta t: %d\n",timing[instance].delta_time_ms);
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
@@ -1124,7 +1126,7 @@ void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
 void AP_GPS::update(void)
 {
     WITH_SEMAPHORE(rsem);
-    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update);%ld", AP_HAL::millis()-last_time_ms);
+    printf("AP_GPS::update %dms\n", AP_HAL::millis()-last_time_ms);
     last_time_ms = AP_HAL::millis();
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
@@ -2160,7 +2162,7 @@ bool AP_GPS::is_healthy(uint8_t instance) const
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
         state[instance].lagged_sample_count < 5;
-        //printf("t.delayed_count %d %f %f",t.delayed_count,t.average_delta_ms,delay_avg_max);
+        //printf("t.delayed_count %d %f %f\n",t.delayed_count,t.average_delta_ms,delay_avg_max);
     if (!delay_ok) {
         return false;
     }

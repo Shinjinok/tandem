@@ -695,6 +695,7 @@ bool AP_GPS_DroneCAN::do_config()
 // Consume new data and mark it received
 bool AP_GPS_DroneCAN::read(void)
 {
+    printf("AP_GPS_DroneCAN::read(void)\n");
     if (gps._auto_config >= AP_GPS::GPS_AUTO_CONFIG_ENABLE_ALL) {
         if (!do_config()) {
             return false;

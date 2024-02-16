@@ -81,6 +81,8 @@ private:
     int _gazebo_port = 9002;
     static const uint64_t GAZEBO_TIMEOUT_US = 5000000;
     int count = 0;
+
+    uint32_t last_one_hz_ms=0;
     
 };
 

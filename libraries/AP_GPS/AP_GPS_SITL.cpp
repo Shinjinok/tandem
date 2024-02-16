@@ -61,7 +61,7 @@ bool AP_GPS_SITL::read(void)
 {
     const uint32_t now = AP_HAL::millis();
 
-    //printf("gps sitl resd\n");
+    //printf("gps sitl read %d\n",now - last_update_ms);
     if (now - last_update_ms < 200) {
         return false;
     }

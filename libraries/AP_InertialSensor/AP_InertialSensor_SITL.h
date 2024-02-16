@@ -54,6 +54,7 @@ private:
     float gyro_motor_phase[32];
     float accel_motor_phase[32];
     uint32_t temp_start_ms;
+    uint32_t last_time_ms;
 #if AP_SIM_INS_FILE_ENABLED
     int gyro_fd = -1;
     int accel_fd = -1;

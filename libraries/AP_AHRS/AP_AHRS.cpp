@@ -344,7 +344,7 @@ void AP_AHRS::update_state(void)
 void AP_AHRS::update(bool skip_ins_update)
 {
     uint32_t t_now = AP_HAL::millis();
-
+    printf("AP_AHRS::update %d\n",t_now - last_time);
     if(t_now - last_time > 1000){
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "One Hz loop: %d ms", t_now - last_time);
     }
@@ -517,6 +517,7 @@ void AP_AHRS::update_DCM()
 #if AP_AHRS_SIM_ENABLED
 void AP_AHRS::update_SITL(void)
 {
+    //printf("AP_AHRS::update_SITL\n");
     sim.update();
     sim.get_results(sim_estimates);
 

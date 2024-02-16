@@ -356,9 +356,11 @@ void AP_Scheduler::loop()
         /*
           for testing low CPU conditions we can add an optional delay in SITL
         */
+          
         auto *sitl = AP::sitl();
         uint32_t loop_delay_us = sitl->loop_delay.get();
         hal.scheduler->delay_microseconds(loop_delay_us);
+       
     }
 #endif
 
@@ -371,17 +373,20 @@ void AP_Scheduler::loop()
     // the first call to the scheduler they won't run on a later
     // call until scheduler.tick() is called again
     const uint32_t loop_us = get_loop_period_us();
+
     uint32_t now = AP_HAL::micros();
     uint32_t time_available = 0;
     const uint32_t loop_tick_us = now - sample_time_us;
+    
+     
     if (loop_tick_us < loop_us) {
         // get remaining time available for this loop
         time_available = loop_us - loop_tick_us;
     }
-
+    
     // add in extra loop time determined by not achieving scheduler tasks
     time_available += extra_loop_us;
-
+    //printf("time_available %d us\n",time_available);
     // run the tasks
     run(time_available);
 
@@ -413,8 +418,12 @@ void AP_Scheduler::loop()
     _loop_timer_start_us = sample_time_us;
 
 #if AP_SIM_ENABLED && CONFIG_HAL_BOARD != HAL_BOARD_SITL
+ 
     hal.simstate->update();
+    printf("hal.simstate->update()\n");
+    
 #endif
+
 }
 
 void AP_Scheduler::update_logging()

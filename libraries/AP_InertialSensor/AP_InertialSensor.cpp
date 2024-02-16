@@ -1549,7 +1549,7 @@ bool AP_InertialSensor::accel_calibrated_ok_all() const
             bool have_scaling = (!is_zero(scaling.x) && !is_equal(scaling.x,1.0f)) || (!is_zero(scaling.y) && !is_equal(scaling.y,1.0f)) || (!is_zero(scaling.z) && !is_equal(scaling.z,1.0f));
             bool have_offsets = !_accel_offset(i).get().is_zero();
             if (have_scaling || have_offsets) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"not have_scaling || not have_offsets %d",i);
+                //GCS_SEND_TEXT(MAV_SEVERITY_WARNING,"not have_scaling || not have_offsets %d",i);
                 return false;
             }
             

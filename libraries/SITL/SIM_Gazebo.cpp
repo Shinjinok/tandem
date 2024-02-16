@@ -78,6 +78,9 @@ void Gazebo::recv_fdm(const struct sitl_input &input)
 {
     fdm_packet pkt;
 
+    uint32_t now = AP_HAL::millis();
+    printf("Gazebo::recv_fdm %d\n", now - last_one_hz_ms);
+    last_one_hz_ms = now;
     /*
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM

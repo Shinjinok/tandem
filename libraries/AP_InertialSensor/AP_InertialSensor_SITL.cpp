@@ -371,6 +371,9 @@ float AP_InertialSensor_SITL::gyro_drift(void) const
 
 bool AP_InertialSensor_SITL::update(void) 
 {
+    uint32_t t_now = AP_HAL::millis();
+    //printf("ins update %d\n",t_now-last_time_ms);
+    last_time_ms = t_now;
     update_accel(accel_instance);
     update_gyro(gyro_instance);
     return true;

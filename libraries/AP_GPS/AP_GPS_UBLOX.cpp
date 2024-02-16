@@ -562,6 +562,7 @@ AP_GPS_UBLOX::_request_port(void)
 bool
 AP_GPS_UBLOX::read(void)
 {
+    //printf("AP_GPS_UBLOX::read(void)\n");
     bool parsed = false;
     uint32_t millis_now = AP_HAL::millis();
 

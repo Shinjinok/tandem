@@ -50,6 +50,10 @@
 #define USERHOOK_SUPERSLOWLOOP userhook_SuperSlowLoop();  // for code to be run at 1hz
 //#define USERHOOK_AUXSWITCH ENABLED                        // for code to handle user aux switches
 //#define USER_PARAMS_ENABLED ENABLED                       // to enable user parameters
-#ifndef HAL_EXTERNAL_AHRS_ENABLED
-    #define HAL_EXTERNAL_AHRS_ENABLED ENABLED
-#endif
+
+//#define FRAME_CONFIG HELI_FRAME
+//#define HAL_SIM_GPS_ENABLED ENABLED
+//#define CONFIG_HAL_BOARD HAL_BOARD_SITL
+//#define AP_AHRS_SIM_ENABLED ENABLED
+//#define HAL_EXTERNAL_AHRS_ENABLED ENABLED
+

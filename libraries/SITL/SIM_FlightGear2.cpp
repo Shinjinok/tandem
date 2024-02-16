@@ -97,16 +97,19 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
       we re-send the servo packet every 0.1 seconds until we get a
       reply. This allows us to cope with some packet loss to the FDM
      */
-    uint32_t now = AP_HAL::millis();
-   // uint32_t taken_ms = now - last_one_hz_ms;
-    last_one_hz_ms = now;
-    while (socket_sitl.recv(&dp, RCV_SIZE, 1) != RCV_SIZE) {
-        //send_servos(input);
+   
+   // uint64_t now = AP_HAL::micros64();
+    
+
+    
+    while (socket_sitl.recv(&dp, RCV_SIZE, 100) != RCV_SIZE) {
+        send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear2 reset
         if (get_wall_time_us() > last_wall_time_us + FlightGear2_TIMEOUT_US) {
             last_timestamp = 0;
         }
     }
+    
     
 
     for (long unsigned int i=0; i < NUM_64_DATA; i++){
@@ -133,63 +136,39 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
                     pkt.g_packet.pqr_rad[1],
                     pkt.g_packet.pqr_rad[2]);
 
-    
-    
- //   float roll,pitch,yaw;
- //   dcm.to_euler(&roll,&pitch,&yaw);
+     // compute dcm from imu orientation
+    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
+                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
+                   pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE); 
+                                  
 
     velocity_ef = Vector3f(pkt.g_packet.speed_ned_fps[0]*FEET_TO_METERS,
                         pkt.g_packet.speed_ned_fps[1]*FEET_TO_METERS,
                         pkt.g_packet.speed_ned_fps[2]*FEET_TO_METERS);
+
     location.lat = pkt.g_packet.lat_lon[0] * 1.0e7;
     location.lng = pkt.g_packet.lat_lon[1] * 1.0e7;
-    location.alt = pkt.g_packet.alt * 100.0f + 500.0f;
-
+    location.alt = pkt.g_packet.alt * 100.0f;
+    //position.xy().zero();
+    position.z = -pkt.g_packet.alt * 100.0f;
     position = origin.get_distance_NED_double(location);
+    gps_count = 0;
 
-   // Vector3d home_pos = origin.get_distance_NED_double(home);
+    
 
-     // compute dcm from imu orientation
-    dcm.from_euler(pkt.g_packet.orientation_rpy_deg[0]*DEG_TO_RAD_DOUBLE,
-                   pkt.g_packet.orientation_rpy_deg[1]*DEG_TO_RAD_DOUBLE,
-                   pkt.g_packet.orientation_rpy_deg[2]*DEG_TO_RAD_DOUBLE);
-    //Matrix3f dcm2 = dcm;
     
-   // Vector3f velocity_t = dcm2.transposed() * velocity_ef;
-    //rpm[0] = pkt.g_packet.rpm;
-    //rpm[1] = pkt.g_packet.rpm;
-    //smooth_sensors();                    
-    
-    
-   //printf("deltat %f  ms: %d----------------------------------\n",deltat,taken_ms);
-  
-  // printf("A: %3.3f %3.3f %3.3f G: %3.3f %3.3f %3.3f V:%f %f %f\n",accel_body.x,accel_body.y,accel_body.z,
-   //                                             gyro.x,gyro.y,gyro.z, velocity_ef.x, velocity_ef.y,velocity_ef.z);
-   // printf("P: %d %d %d\n",location.lat,location.lng,location.alt);
-   // printf("P(m) %f %f %f\n",position.x,position.y,position.z);
-   // printf("v(m/s) %f %f %f\n",velocity_ef.x,velocity_ef.y,velocity_ef.z);
-  //  printf("uvw_t(m/s) %f %f %f\n",velocity_t.x,velocity_t.y,velocity_t.z);
-    
-   // printf("H: %d %d %d\n",home.lat,home.lng,home.alt);
-   // printf("O: %d %d %d\n",origin.lat,origin.lng,origin.alt);
-
-  //  printf("roll %f %f  pitch %f %f  yaw  %f %f\n",static_cast<float>(pkt.g_packet.orientation_rpy_deg[0])*DEG_TO_RAD_DOUBLE,roll,
-  //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[1])*DEG_TO_RAD_DOUBLE,pitch,
-  //  static_cast<float>(pkt.g_packet.orientation_rpy_deg[2])*DEG_TO_RAD_DOUBLE,yaw);
-/*     ch[0] = pkt.g_packet.ch[0];
-    ch[1] = pkt.g_packet.ch[1];
-    ch[2] = pkt.g_packet.ch[2];
-    ch[3] = pkt.g_packet.ch[3]; */
-   
+       
     time_now_us += static_cast<uint64_t>(deltat * 1.0e6);
 
     if (deltat < 0.01 && deltat > 0) {
         adjust_frame_time(static_cast<float>(1.0/deltat));
     }
-    
-    
-    last_timestamp = pkt.g_packet.timestamp;
 
+
+    last_timestamp = pkt.g_packet.timestamp;
+   
+   // printf("FlightGear2::recv_fdm time %ld\n", dt);
+    //last_one_hz_ms = now;
 }
 
 /*
