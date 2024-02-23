@@ -110,8 +110,8 @@ namespace SITL {
       void drain_sockets();
 
       double last_timestamp;
-
-      SocketAPM socket_sitl;
+      uint32_t frame_counter;
+      SocketAPM sock;
       const char *_FlightGear2_address = "127.0.0.1";
       int _FlightGear2_port = 9002;
       static const uint64_t FlightGear2_TIMEOUT_US = 5000000;

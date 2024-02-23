@@ -40,7 +40,7 @@ void Copter::userhook_SlowLoop()
 void Copter::userhook_SuperSlowLoop()
 {
     // put your 1Hz code here
-    AP_Arming *ap_arming = AP_Arming::get_singleton();
+   /*  AP_Arming *ap_arming = AP_Arming::get_singleton();
     uint32_t current_time = AP_HAL::millis();
     
     const char* health = "";
@@ -73,7 +73,7 @@ void Copter::userhook_SuperSlowLoop()
         else{
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "This is SFC, PFC dead");
         }
-   }
+   } */
 
 }
 #endif

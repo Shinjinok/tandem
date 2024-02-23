@@ -10,7 +10,7 @@ import threading
 import time
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from pymavlink import mavextra
-import dronekit
+#import dronekit
 Param = []
 Param.append(['AHRS_EKF_TYPE',11])
 Param.append(['EAHRS_TYPE', 3])
@@ -299,7 +299,7 @@ class usbSerial(QObject):
 
     def parsing_data_from_serial(self, serial_data_in):
         a = str(serial_data_in).split(':')
-        #print(a)
+        print(a)
         if len(a) == 10:
           rcv_data = []
           for i in range(4): rcv_data.append(int(a[i+1]))

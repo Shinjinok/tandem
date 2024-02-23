@@ -208,19 +208,24 @@ const char* AP_ExternalAHRS_FlightGear::get_name() const
  */
 void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
 {
+    uint16_t values[8] {};
     AP_Arming *ap_arming = AP_Arming::get_singleton();
     if(ap_arming->can.alive && ap_arming->can.my_id == 10){
-        uint16_t values[8] {};
+        
         hal.rcout->read(values, 8);
         uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
     }
-    if(!ap_arming->can.alive && ap_arming->can.my_id == 11){
-        uint16_t values[8] {};
+    else if(!ap_arming->can.alive && ap_arming->can.my_id == 11){
+
         hal.rcout->read(values, 8);
         uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
     }
-    //uart->write((const uint8_t *) &values[0],sizeof(values));
-    //uart->printf("\n");
+    else {
+        hal.rcout->read(values, 8);
+        uart->printf(":%d:%d:%d:%d:%d:%d:%d:%d:\n",values[0],values[1],values[2],values[3],values[4],values[5],values[6],values[7]);
+    }
+
+    
 
 
     const struct Generic_packet &pkt1 = *(struct Generic_packet *)b;
@@ -283,7 +288,7 @@ void AP_ExternalAHRS_FlightGear::process_packet1(const uint8_t *b)
     if (AP::gps().get_first_external_instance(instance)) {
         AP::gps().handle_external(gps, instance);
     }
-    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "gyro %f %f %f",gyro.x,gyro.y,gyro.z);
+    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "loc %f %f %f",velocity.x,velocity.y,velocity.z);
 
 
 

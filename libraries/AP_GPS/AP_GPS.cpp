@@ -1125,9 +1125,12 @@ void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
  */
 void AP_GPS::update(void)
 {
-    WITH_SEMAPHORE(rsem);
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL   
     printf("AP_GPS::update %dms\n", AP_HAL::millis()-last_time_ms);
     last_time_ms = AP_HAL::millis();
+#endif     
+    WITH_SEMAPHORE(rsem);
+   
     for (uint8_t i=0; i<GPS_MAX_RECEIVERS; i++) {
         update_instance(i);
     }

@@ -38,7 +38,7 @@ bool AP_InertialSensor_ExternalAHRS::update(void)
         update_accel(accel_instance);
         update_gyro(gyro_instance);
     }
-    //GCS_SEND_TEXT(MAV_SEVERITY_INFO, "update  started %d", started);
+    
 
     return started;
 }
@@ -46,6 +46,7 @@ bool AP_InertialSensor_ExternalAHRS::update(void)
 void AP_InertialSensor_ExternalAHRS::start()
 {
     const float rate = AP::externalAHRS().get_IMU_rate();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "AP_InertialSensor_ExternalAHRS::imu rate %f", rate);
     if (_imu.register_gyro(gyro_instance, rate,
                            AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SERIAL, serial_port, 1, DEVTYPE_SERIAL)) &&
         _imu.register_accel(accel_instance, rate,
