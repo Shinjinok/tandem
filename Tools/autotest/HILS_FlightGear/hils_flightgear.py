@@ -33,8 +33,8 @@ from PyQt5.QtWidgets import *
 from PyQt5 import uic
 import serial
 import serial.tools.list_ports
-import common
-#import uavcan_common
+import FGcommon
+import uavcan_common
 
 # python -m PyQt5.uic.pyuic -x mainwindow.ui -o mainwindow.py
 
@@ -51,12 +51,12 @@ class HILS_FlightGear(QtWidgets.QDialog):
        
        self.init_serial_ports()
 
-       text, port_list = common.get_pixhawk_port()
+       text, port_list = FGcommon.get_pixhawk_port()
        self.ui.textEdit_4.setText(text)
        for i in range(len(port_list)):
          self.ui.comboBox.addItem(port_list[i])
 
-       self.udp = common.udp_socket("127.0.0.1:9003:9002")
+       self.udp = FGcommon.udp_socket("127.0.0.1:9003:9002")
        self.pushButton_1.clicked.connect(self.handelButton_1)
        self.pushButton_2.clicked.connect(self.handelButton_2)
        self.pushButton_3.clicked.connect(self.handelButton_3)
@@ -64,31 +64,36 @@ class HILS_FlightGear(QtWidgets.QDialog):
        #self.pushButton_5.clicked.connect(self.handelButton_5)
        self.udp.intReady.connect(self.update_textedit)
        self.udp.packReady.connect(self.send_data_to_serial)
+       self.last_timestamp = 0;
        
     def init_serial_ports(self):
        self.port1 = None
        self.port2 = None
        self.serial1 = None
        self.serial2 = None
-       port1 , hwid1, port2, hwid2 = common.get_serial_port()
+       port1 , hwid1, port2, hwid2 = FGcommon.get_serial_port()
        
        self.port1 = port1
        self.port2 = port2
        if self.port1 != None:
          self.ui.label.setText(port1 + hwid1)
-         self.serial1 = common.usbSerial(port1)
+         self.serial1 = FGcommon.usbSerial(port1)
          self.serial1.packReady.connect(self.receive_from_serial1)
        if self.port2 != None:
          self.ui.label_2.setText(port2 + hwid2)
-         self.serial2 = common.usbSerial(port2)
+         self.serial2 = FGcommon.usbSerial(port2)
          self.serial2.packReady.connect(self.receive_from_serial2)  
 
     def closeEvent(self, event):
         self.udp.close()
+        
         if self.serial1 != None:
             self.serial1.close()
+            print("serial1 closed\n")
         if self.serial2 != None:
             self.serial2.close()
+            print("serial1 closed\n")
+         
 
     def handelButton_5(self):
        port = self.ui.comboBox.currentText()
@@ -102,7 +107,7 @@ class HILS_FlightGear(QtWidgets.QDialog):
        
     def handelButton_1(self):
 
-       text, port_list = common.get_pixhawk_port()
+       text, port_list = FGcommon.get_pixhawk_port()
        self.ui.textEdit_4.setText(text)
        self.ui.comboBox.clear()
        for i in range(len(port_list)):
@@ -150,7 +155,7 @@ class HILS_FlightGear(QtWidgets.QDialog):
     def handelButton_4(self):
        
        port = self.ui.comboBox.currentText()
-       common.set_param(port)
+       FGcommon.set_param(port)
        self.ui.textEdit_4.setText('Param Set via port='+port)
        
     def open_serial_port(self):
@@ -164,8 +169,11 @@ class HILS_FlightGear(QtWidgets.QDialog):
           self.serial2.send(data)
           
     def update_textedit(self, upack_data):
-      data = ''
       
+      dT = upack_data[0] - self.last_timestamp
+      self.last_timestamp = upack_data[0]
+      data = ''
+      data += 'dT(ms) : {:.1f}\n '.format(dT)
       data += 'GPSt(sec) : {:.3f}\n'.format(upack_data[0]*1e-3)
       data += 'Latitude : {:.7f}\n'.format(upack_data[1])
       data += 'Longitude: {:.7f}\n'.format(upack_data[2])
@@ -200,8 +208,6 @@ class HILS_FlightGear(QtWidgets.QDialog):
         self.ui.verticalSlider_6.setValue(servo_value[1])
         self.ui.verticalSlider_7.setValue(servo_value[2])
         self.ui.verticalSlider_8.setValue(servo_value[3])
-
-
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

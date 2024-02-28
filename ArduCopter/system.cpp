@@ -315,7 +315,7 @@ bool Copter::ekf_alt_ok() const
 
     // with EKF use filter status and ekf check
     nav_filter_status filt_status = inertial_nav.get_filter_status();
-    printf("filt_status.flags.vert_vel && filt_status.flags.vert_pos %d , %d\n",filt_status.flags.vert_vel , filt_status.flags.vert_pos);
+   // printf("filt_status.flags.vert_vel && filt_status.flags.vert_pos %d , %d\n",filt_status.flags.vert_vel , filt_status.flags.vert_pos);
     // require both vertical velocity and position
     return (filt_status.flags.vert_vel && filt_status.flags.vert_pos);
 }

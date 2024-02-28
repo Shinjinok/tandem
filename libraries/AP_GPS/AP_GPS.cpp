@@ -1126,8 +1126,8 @@ void AP_GPS::inject_MBL_data(uint8_t* data, uint16_t length)
 void AP_GPS::update(void)
 {
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL   
-    printf("AP_GPS::update %dms\n", AP_HAL::millis()-last_time_ms);
-    last_time_ms = AP_HAL::millis();
+ //   printf("AP_GPS::update %dms\n", AP_HAL::millis()-last_time_ms);
+  //  last_time_ms = AP_HAL::millis();
 #endif     
     WITH_SEMAPHORE(rsem);
    

@@ -10,7 +10,7 @@ import threading
 import time
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, pyqtSlot
 from pymavlink import mavextra
-#import dronekit
+import dronekit
 Param = []
 Param.append(['AHRS_EKF_TYPE',11])
 Param.append(['EAHRS_TYPE', 3])
@@ -38,12 +38,15 @@ Param.append(['CAN_P1_DRIVER', 1])
 Param.append(['ATC_ANG_PIT_P', 1.0])
 Param.append(['ATC_ANG_RLL_P', 1.0])
 Param.append(['ATC_ANG_YAW_P', 1.0])
+
 Param.append(['ATC_RAT_PIT_D', 0.5])
 Param.append(['ATC_RAT_PIT_I', 0.01])
 Param.append(['ATC_RAT_PIT_P', 1.0])
+
 Param.append(['ATC_RAT_RLL_D', 0.5])
 Param.append(['ATC_RAT_RLL_I', 0.01])
 Param.append(['ATC_RAT_RLL_P', 1.0])
+
 Param.append(['ATC_RAT_YAW_D', 0.5])
 Param.append(['ATC_RAT_YAW_I', 0.01])
 Param.append(['ATC_RAT_YAW_P', 1.0])
@@ -51,9 +54,11 @@ Param.append(['ATC_RAT_YAW_P', 1.0])
 Param.append(['PSC_VELXY_D', 0.25])
 Param.append(['PSC_VELXY_P', 0.5])
 Param.append(['PSC_VELXY_I', 0.01])
+
 Param.append(['PSC_VELZ_D', 0.5])
 Param.append(['PSC_VELZ_P', 1.0])
 Param.append(['PSC_VELZ_I', 0.01])
+
 Param.append(['ATC_RATE_FF_ENAB', 0])
 Param.append(['PSC_POSXY_P', 2.0])
 
@@ -205,7 +210,7 @@ class udp_socket(QObject):
           d = self.packing_data(unpack_data)
           self.packReady.emit(d)
           self.intReady.emit(unpack_data)
-          time.sleep(0.01)
+          time.sleep(0.001)
     
     print('udp thread stop\n')
 
@@ -283,19 +288,23 @@ class usbSerial(QObject):
     @pyqtSlot(bytes)
     def listen(self):
         print(self.port, " start thread\n")
-        time.sleep(1)
+        #time.sleep(1)
 
         while self.thread_run :
-          time.sleep(0.01)
+          time.sleep(0.001)
           serial_data_in = self.serial.readline()
           if serial_data_in != None:
               self.packReady.emit(serial_data_in)
 
-        #time.sleep(1)      
-        print(self.port, "thread stop\n")
-
+        #time.sleep(1)
+        self.serial.cancel_write()
+        self.serial.close()      
+        print("serial" ,self.port, " thread stop\n")
+        
+    
     def send(self,in_data):
-        self.serial.write(in_data)
+        if self.serial.writable():
+          self.serial.write(in_data)
 
     def parsing_data_from_serial(self, serial_data_in):
         a = str(serial_data_in).split(':')

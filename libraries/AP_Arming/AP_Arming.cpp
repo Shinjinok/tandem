@@ -236,9 +236,9 @@ void AP_Arming::check_failed(const enum AP_Arming::ArmingChecks check, bool repo
     // metafmt is wrapped around the passed-in format string to
     // prepend "PreArm" or "Arm", depending on what sorts of checks
     // we're currently doing.
-    const char *metafmt = "PreArm^^: %s";  // it's formats all the way down
+    const char *metafmt = "PreArm: %s";  // it's formats all the way down
     if (running_arming_checks) {
-        metafmt = "Arm^^: %s";
+        metafmt = "Arm: %s";
     }
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
 
@@ -263,9 +263,9 @@ void AP_Arming::check_failed(bool report, const char *fmt, ...) const
     // metafmt is wrapped around the passed-in format string to
     // prepend "PreArm" or "Arm", depending on what sorts of checks
     // we're currently doing.
-    const char *metafmt = "PreArm++: %s";  // it's formats all the way down
+    const char *metafmt = "PreArm: %s";  // it's formats all the way down
     if (running_arming_checks) {
-        metafmt = "Arm++: %s";
+        metafmt = "Arm: %s";
     }
     hal.util->snprintf(taggedfmt, sizeof(taggedfmt), metafmt, fmt);
 

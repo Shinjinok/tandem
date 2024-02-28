@@ -345,7 +345,7 @@ void AP_AHRS::update(bool skip_ins_update)
 {
 #if CONFIG_HAL_BOARD==HAL_BOARD_SITL
     uint32_t t_now = AP_HAL::millis();
-    printf("AP_AHRS::update %d\n",t_now - last_time);
+    //printf("AP_AHRS::update %d\n",t_now - last_time);
     if(t_now - last_time > 1000){
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "One Hz loop: %d ms", t_now - last_time);
     }
@@ -2804,7 +2804,8 @@ bool AP_AHRS::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3
 
 #if HAL_EXTERNAL_AHRS_ENABLED
     case EKFType::EXTERNAL:
-        return false;
+        return external.get_variances(velVar, posVar, hgtVar, magVar, tasVar);
+        //return false;
 #endif
     }
 

@@ -41,20 +41,32 @@ static const struct {
     { "BRD_OPTIONS", 0},
     { "INS_GYR_CAL", 0 },
     { "AHRS_EKF_TYPE", 10},// XPlane sensor data is not good enough for EKF. Use fake EKF by default
-  //  { "GPS_TYPE", 100 },
+    { "GPS_TYPE", 1 },
     { "DISARM_DELAY", 0},
-    { "INS_ACC2OFFS_X",    0.001 },
-    { "INS_ACC2OFFS_Y",    0.001 },
-    { "INS_ACC2OFFS_Z",    0.001 },
-    { "INS_ACC2SCAL_X",    1.001 },
-    { "INS_ACC2SCAL_Y",    1.001 },
-    { "INS_ACC2SCAL_Z",    1.001 },
-    { "INS_ACCOFFS_X",     0.001 },
-    { "INS_ACCOFFS_Y",     0.001 },
-    { "INS_ACCOFFS_Z",     0.001 },
-    { "INS_ACCSCAL_X",     1.001 },
-    { "INS_ACCSCAL_Y",     1.001 },
-    { "INS_ACCSCAL_Z",     1.001 },
+    { "ATC_HOVR_ROL_TRM",    0 },
+    { "CAN_SLCAN_CPORT",   0 },
+    { "CAN_P1_DRIVER",   1 },
+    { "ATC_ANG_PIT_P",    1.0 },
+    { "ATC_ANG_RLL_P",    1.0 },
+    { "ATC_ANG_YAW_P",    1.0 },
+    { "ATC_RAT_PIT_D",     0.5 },
+    { "ATC_RAT_PIT_I",     0.01 },
+    { "ATC_RAT_PIT_P",     1.0 },
+    { "ATC_RAT_RLL_D",     0.5 },
+    { "ATC_RAT_RLL_I",     0.01 },
+    { "ATC_RAT_RLL_P",     1.0 },
+    { "ATC_RAT_YAW_D",     0.5 },
+    { "ATC_RAT_YAW_I",     0.01 },
+    { "ATC_RAT_YAW_P",     1.0 },
+    { "PSC_VELXY_D",     0.25 },
+    { "PSC_VELXY_P",     0.5 },
+    { "PSC_VELXY_I",     0.01 },
+    { "PSC_VELZ_D",     0.5 },
+    { "PSC_VELZ_P",     1.0 },
+    { "PSC_VELZ_I",     0.01 },
+    { "ATC_RATE_FF_ENAB",     0 },
+    { "PSC_POSXY_P",     2.0 },
+
 };
 
 FlightGear2::FlightGear2(const char *frame_str) :
@@ -63,16 +75,24 @@ FlightGear2::FlightGear2(const char *frame_str) :
     sock(true)
 {
     fprintf(stdout, "Starting SITL FlightGear2\n");
-
+    float val;
     for (uint8_t i=0; i<ARRAY_SIZE(sim_defaults); i++) {
-    AP_Param::set_default_by_name(sim_defaults[i].name, sim_defaults[i].value);
+
+    AP_Param::set_and_save_by_name(sim_defaults[i].name, sim_defaults[i].value);
+    AP_Param::get(sim_defaults[i].name, val);
+    if(abs(sim_defaults[i].value - val) > 1e-10){
+        printf("%s set value to %f (%f)\n",sim_defaults[i].name,  sim_defaults[i].value,val);
+    }
+    
         if (sim_defaults[i].save) {
+            
             enum ap_var_type ptype;
             AP_Param *p = AP_Param::find(sim_defaults[i].name, &ptype);
             if (!p->configured()) {
                 p->save();
             }
         }
+    
     }
 }
 
@@ -146,7 +166,7 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
 
     
     while (sock.recv(&dp, RCV_SIZE, 100) != RCV_SIZE) {
-        printf("!= RCV_SIZE\n");
+      //  printf("!= RCV_SIZE\n");
         send_servos(input);
         // Reset the timestamp after a long disconnection, also catch FlightGear2 reset
         if (get_wall_time_us() > last_wall_time_us + FlightGear2_TIMEOUT_US) {
@@ -266,7 +286,7 @@ void FlightGear2::update(const struct sitl_input &input)
 // allow for changes in physics step
     adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 
-    printf("FPS %.2f\n", rate_hz); // this is instantaneous rather than any clever average
+    //printf("FPS %.2f\n", rate_hz); // this is instantaneous rather than any clever average
     //drain_sockets();
     
 }
