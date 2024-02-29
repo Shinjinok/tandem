@@ -65,10 +65,11 @@ void AP_RPM::init(void)
         // init called a 2nd time?
         return;
     }
-
+    //printf("AP_RPM_SIM_ENABLED %i\n",(uint8_t) AP_RPM_SIM_ENABLED );
     convert_params();
 
     for (uint8_t i=0; i<RPM_MAX_INSTANCES; i++) {
+        printf("rpm[%i] type,%i \n",i,(int8_t)  _params[i].type);
         switch (_params[i].type) {
 #if AP_RPM_PIN_ENABLED
         case RPM_TYPE_PWM:
@@ -100,8 +101,10 @@ void AP_RPM::init(void)
             break;
 #endif  // AP_RPM_HARMONICNOTCH_ENABLED
 #if AP_RPM_SIM_ENABLED
+        
         case RPM_TYPE_SITL:
             drivers[i] = new AP_RPM_SITL(*this, i, state[i]);
+            printf("RPM[%i] initialized \n",i);
             break;
 #endif  // AP_RPM_SIM_ENABLED
         }

@@ -31,6 +31,7 @@ AP_RPM_SITL::AP_RPM_SITL(AP_RPM &_ap_rpm, uint8_t _instance, AP_RPM::RPM_State &
 
 void AP_RPM_SITL::update(void)
 {
+    //printf("rpm update");
     if (sitl == nullptr) {
         return;
     }
@@ -41,6 +42,7 @@ void AP_RPM_SITL::update(void)
         if (motor_mask & (1U<<i)) {
             if (count == instance) {
                 state.rate_rpm = sitl->state.rpm[i];
+               // printf("rpm[%i] update %f\n",i,state.rate_rpm);
                 break;
             }
             count++;

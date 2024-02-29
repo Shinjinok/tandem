@@ -42,6 +42,8 @@ static const struct {
     { "INS_GYR_CAL", 0 },
     { "AHRS_EKF_TYPE", 10},// XPlane sensor data is not good enough for EKF. Use fake EKF by default
     { "GPS_TYPE", 1 },
+    { "RPM_TYPE", 10 },//RPM_TYPE_SITL
+    { "CAN_D1_UC_OPTION", 288 },//5:send gnss, 8:enable stats
     { "DISARM_DELAY", 0},
     { "ATC_HOVR_ROL_TRM",    0 },
     { "CAN_SLCAN_CPORT",   0 },
@@ -80,8 +82,9 @@ FlightGear2::FlightGear2(const char *frame_str) :
 
     AP_Param::set_and_save_by_name(sim_defaults[i].name, sim_defaults[i].value);
     AP_Param::get(sim_defaults[i].name, val);
+    printf("%s set value to %f (%f)\n",sim_defaults[i].name,  sim_defaults[i].value, val);
     if(abs(sim_defaults[i].value - val) > 1e-10){
-        printf("%s set value to %f (%f)\n",sim_defaults[i].name,  sim_defaults[i].value,val);
+        
     }
     
         if (sim_defaults[i].save) {
@@ -107,6 +110,7 @@ void FlightGear2::set_interface_ports(const char* address, const int port_in, co
     if (!sock.bind(address, port_in)) {
         fprintf(stderr, "SITL: socket in bind failed on sim in : %d  - %s\n", port_in, strerror(errno));
         fprintf(stderr, "Aborting launch...\n");
+        usleep(6e7);
         exit(1);
     }
     printf("Bind %s:%d for SITL in\n", address, port_in);
@@ -219,6 +223,9 @@ void FlightGear2::recv_fdm(const struct sitl_input &input)
 
     // airspeed as seen by a fwd pitot tube (limited to 120m/s)
     airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1.0f, 0.0f, 0.0f), 0.0f, 120.0f);
+
+    motor_mask = 1;
+    rpm[0] = pkt.g_packet.rpm;
 
     // Convert from a meters from origin physics to a lat long alt
     update_position();
