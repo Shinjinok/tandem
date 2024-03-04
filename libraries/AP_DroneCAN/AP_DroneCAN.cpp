@@ -385,7 +385,7 @@ void AP_DroneCAN::loop(void)
 
         canard_iface.process(1);
 
-        fc_state_send();
+       // fc_state_send();
         safety_state_send();
         notify_state_send();
         check_parameter_callback_timeout();

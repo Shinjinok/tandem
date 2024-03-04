@@ -1,0 +1,6 @@
+float16 x
+float16[<8] y
+---
+uint6 JUST_ENOUGH = 42
+float64 answer
+namespace_a.Foo foo
