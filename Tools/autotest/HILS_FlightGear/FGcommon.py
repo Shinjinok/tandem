@@ -176,6 +176,7 @@ class udp_socket(QObject):
     self.port.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     self.port.settimeout(1)
     self.port.bind((a[0], int(a[1])))
+    print("bind port",a[1])
     self.destination_addr = (a[0], int(a[2]))
     self.udp_data_in = None
     self.udp_data_in_flag = False
@@ -189,6 +190,7 @@ class udp_socket(QObject):
   def write(self, buf):
     try:
         self.port.sendto(buf, self.destination_addr)
+        print(self.destination_addr)
 
     except socket.error:
         pass
@@ -208,8 +210,10 @@ class udp_socket(QObject):
         if(len(data_udp) > 0):
           unpack_data = self.unpacking_data(data_udp)
           d = self.packing_data(unpack_data)
-          self.packReady.emit(d)
-          self.intReady.emit(unpack_data)
+          #self.packReady.emit(d)
+          #self.intReady.emit(unpack_data)
+          self.packReady.emit(data_udp)
+
           time.sleep(0.001)
     
     print('udp thread stop\n')
